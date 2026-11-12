@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="96"
+   height="48"
+   viewBox="0 0 32 16"
+   fill="none"
+   stroke="#ff9a1f"
+   stroke-opacity="0.9"
+   stroke-width="1.3"
+   version="1.1"
+   id="svg2"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2" />
+  <path
+     d="M 0,1 H 32 M 0,15 h 32"
+     id="path1" />
+  <path
+     d="m -1.2906287,8.9489917 c 4,-10 13.1957297,-10.8920522 17.1957297,-0.8920522 4,10.0000005 12.854093,8.8232505 16.854093,-1.1767497"
+     id="path2" />
+</svg>

@@ -1,0 +1,688 @@
+---
+import { Image } from 'astro:assets';
+import Layout from '../layouts/Layout.astro';
+import Dieline from '../components/Dieline.astro';
+import BoxViewer from '../components/BoxViewer.astro';
+import kutije from '../assets/img/kutije.webp';
+import ploce from '../assets/img/ploce.jpg';
+import stancanje from '../assets/img/stancanje.webp';
+import sundjer from '../assets/img/sundjer.webp';
+import cnc from '../assets/img/cnc.jpg';
+
+const titleLines = [['Kutije', 'krojene'], ['po', 'vašoj', 'meri.']];
+let wi = 0;
+
+const range = [
+  { k: 'a', t: 'Kartonske kutije', img: kutije, alt: 'Kartonske kutije različitih dimenzija i tipova', pos: 'center', widths: [640, 960, 1280, 1600], sizes: '(max-width: 1024px) 100vw, 66vw', p: 'Po meri i u serijama - od lakih kutija za sitne proizvode do čvrstih transportnih pakovanja. Svaka dimenzija, svaki tip.' },
+  { k: 'b', t: 'Kartonske ploče', img: ploce, alt: 'Složene kartonske ploče', pos: 'center', widths: [480, 720, 960], sizes: '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw', p: 'Ploče različitih debljina, sečene na format koji vam treba.' },
+  { k: 'c', t: 'Alati za štancanje', img: stancanje, alt: 'Kalup za štancanje kutija', pos: 'center', widths: [480, 720, 960], sizes: '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw', p: 'Kalupi za štancanje kutija - čist rez i tačan preklop iz serije u seriju.' },
+  { k: 'd', t: 'Proizvodi od sunđera', img: sundjer, alt: 'Proizvodi od sunđera za zaštitu pakovanja', pos: 'center', widths: [480, 720, 960, 1280], sizes: '(max-width: 640px) 100vw, 50vw', p: 'Sunđer sečen po obliku proizvoda: štiti ga u transportu i drži na mestu u kutiji.' },
+  { k: 'e', t: 'CNC lasersko sečenje drveta', img: cnc, alt: 'CNC lasersko sečenje', pos: 'center', widths: [480, 720, 960, 1280], sizes: '(max-width: 640px) 100vw, 50vw', p: 'Precizni konturni rezovi i gravura u drvetu, plastici ili aluminijumu - od jednog komada do serije.' },
+];
+---
+
+<Layout
+  title='Lass Projekt - kartonske kutije, kalupi za štancanje, sunđer i CNC sečenje'
+  metaDescription='Lass Projekt: proizvodnja kartonskih kutija po meri, kartonskih ploča, alata za štancanje, proizvoda od sunđera i CNC laserskog sečenja.'
+  ogTitle='Lass Projekt - pakovanje po meri'
+  canonical='https://www.lassprojekt.netlify.app'
+>
+  <!-- ================= HERO ================= -->
+  <section class='hero' data-hero aria-labelledby='hero-title'>
+    <div class='hero-bg' aria-hidden='true'>
+      <i class='orb orb-a'></i>
+      <i class='orb orb-b'></i>
+      <i class='spot' data-spot></i>
+    </div>
+
+    <div class='hero-copy'>
+      <h1 id='hero-title' class='hero-title'>
+        {titleLines.map((line, li) => (
+          <span class={`line line-${li + 1}`}>
+            {line.map((word) => (
+              <>
+                <span class='w'><span style={`--i:${wi++}`}>{word}</span></span>{' '}
+              </>
+            ))}
+          </span>
+        ))}
+      </h1>
+      <p class='lead'>
+        Kartonske kutije i ploče, alati za štancanje, sunđer za zaštitu pakovanja i CNC lasersko sečenje - iz jedne proizvodnje.
+      </p>
+      <div class='cta'>
+        <a class='btn btn-primary' href='#ponuda'>Zatražite ponudu</a>
+        <a class='btn btn-ghost' href='#asortiman'>Pogledajte asortiman</a>
+      </div>
+    </div>
+
+    <!-- Desktop: apsolutno desno. Tablet/mobilni: u toku strane, ispod CTA dugmadi -->
+    <div class='hero-die'>
+      <Dieline />
+    </div>
+
+    <a class='cue' href='#kutija' aria-label='Pređi na prikaz kutije'>
+      <i aria-hidden='true'></i>
+      <span>3D Kutija</span>
+    </a>
+  </section>
+
+  <!-- ================= 3D KUTIJA (prazno, za Blender) ================= -->
+  <section class='box-sec' id='kutija' aria-label='Interaktivni prikaz kutije'>
+    <BoxViewer />
+  </section>
+
+  <!-- ================= ASORTIMAN ================= -->
+  <section class='range' id='asortiman' aria-labelledby='range-title'>
+    <header class='range-head'>
+      <h2 id='range-title'>Sve za pakovanje, iz jedne proizvodnje.</h2>
+      <p>Od kutije do alata kojim se ona štancuje. Proizvodimo i ono što pakovanje čini sigurnim i preciznim.</p>
+    </header>
+ 
+    <div class='bento' data-bento>
+      {range.map((c) => (
+        <article class={`card card--${c.k}`} style={`--pos:${c.pos}`}>
+          <div class='media'>
+            <Image src={c.img} alt={c.alt} widths={c.widths} sizes={c.sizes} format='webp' quality={72} loading='lazy' decoding='async' />
+          </div>
+          <i class='glow' aria-hidden='true'></i>
+          <h3>{c.t}</h3>
+          <p>{c.p}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<style is:global>
+  /* Animabilni parametar nabora na uglu dugmeta */
+  @property --fold {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 14px;
+  }
+
+  /* ================= HERO ================= */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    min-height: 100svh;
+    display: grid;
+    grid-template-rows: 1fr auto; /* copy, cue (brend je sada u Header-u) */
+    padding: calc(var(--header-h) + var(--space-400)) var(--x-pad) var(--space-500);
+    background: var(--bg);
+  }
+  .hero::before {
+    /* šum - statičan, jednom rasterizovan */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+    opacity: 0.06;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .hero::after {
+    /* prelaz u sledeću sekciju */
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 22vh;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+  }
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    will-change: transform;
+  }
+  .orb-a {
+    width: 64vmax;
+    height: 64vmax;
+    right: -18vmax;
+    bottom: -30vmax;
+    background: radial-gradient(closest-side, rgba(255, 106, 20, 0.45), rgba(255, 106, 20, 0));
+    animation: drift 16s ease-in-out infinite alternate;
+  }
+  .orb-b {
+    width: 56vmax;
+    height: 56vmax;
+    left: -22vmax;
+    top: -26vmax;
+    background: radial-gradient(closest-side, rgba(255, 196, 80, 0.17), rgba(255, 196, 80, 0));
+    animation: drift 22s ease-in-out infinite alternate-reverse;
+  }
+  @keyframes drift {
+    to {
+      transform: translate3d(-6vmax, -4vmax, 0) scale(1.12);
+    }
+  }
+
+  .spot {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 760px;
+    height: 760px;
+    margin: -380px 0 0 -380px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 170, 60, 0.17), rgba(255, 170, 60, 0));
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    will-change: transform;
+  }
+  .spot.on {
+    opacity: 1;
+  }
+
+  /* Naslov */
+  .hero-copy {
+    align-self: center;
+    padding-block: var(--space-700);
+  }
+  .hero-title {
+    margin: 0;
+    font-size: var(--fs-display);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    background: none; /* gradijent nose pojedinačne reči */
+  }
+  .line {
+    display: block;
+  }
+  .w {
+    /* display: inline-block; */
+    vertical-align: top;
+    overflow: hidden;
+    padding-block: 0.1em 0.22em;
+    margin-block: -0.1em -0.22em;
+  }
+  .w > span {
+    /* display: inline-block; */
+    transform-origin: 0 100%;
+    animation: rise 1.15s var(--ease) calc(0.5s + var(--i) * 0.09s) both;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-right: 0.04em;
+  }
+  .line-1 .w > span {
+    background-image: linear-gradient(180deg, #ffffff 15%, #ffe2a8 95%);
+  }
+  .line-2 .w > span {
+    background-image: linear-gradient(180deg, #ffd27a 5%, #ff8a1a 55%, #ff5a14 100%);
+  }
+  @keyframes rise {
+    from {
+      transform: translate3d(0, 115%, 0) rotate(5deg);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+    }
+  }
+
+  .lead {
+    max-width: 34rem;
+    margin-top: var(--space-500);
+    font-size: var(--fs-300);
+    animation: fade 1s var(--ease) 1.3s both;
+  }
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-400);
+    margin-top: var(--space-600);
+    animation: fade 1s var(--ease) 1.5s both;
+  }
+
+  /* ---------- CTA: dugme kao kutija ---------- */
+  .btn {
+    --fold: 14px;
+    position: relative;
+    isolation: isolate;
+    display: inline-block;
+    padding: 1.1rem 2.1rem;
+    font: 600 var(--fs-200) / 1 var(--ff-heading);
+    letter-spacing: 0.01em;
+    border-radius: 0; /* oštre ivice, kao sečen karton */
+    transition: --fold 0.5s var(--ease);
+  }
+  .btn:focus-visible {
+    outline-offset: -6px; /* unutra, jer clip-path odseca spoljašnji outline */
+  }
+
+  /* Primarno: rebrasti karton + ugao koji se otvara kao klapna */
+  .btn-primary {
+    color: #000000;
+    background:
+      repeating-linear-gradient(90deg, rgba(70, 25, 0, 0.1) 0 2px, transparent 2px 7px),
+      var(--gradient-brand);
+    clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%);
+  }
+  .btn-primary::after {
+    /* naličje preklopljenog ugla */
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--fold);
+    height: var(--fold);
+    background: linear-gradient(135deg, #fff0c9, #e8861a);
+    clip-path: polygon(0 0, 0 100%, 100% 100%);
+  }
+  .btn-primary:hover {
+    --fold: 32px;
+  }
+  .btn-primary:active {
+    --fold: 0px; /* klapna se zatvara */
+    transition-duration: 0.12s;
+  }
+  .btn-primary:focus-visible {
+    outline-color: var(--bg);
+  }
+
+  /* Sekundarno: isprekidana linija (crease) + klapna koja se spušta */
+  .btn-ghost {
+    color: var(--text-header);
+    border: 1px dashed var(--line-strong);
+    transition: border-color 0.3s ease;
+  }
+  .btn-ghost::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(255, 190, 100, 0.22), rgba(255, 190, 100, 0.05));
+    transform-origin: 50% 0;
+    transform: perspective(420px) rotateX(-90deg);
+    transition: transform 0.65s var(--ease);
+  }
+  .btn-ghost:hover {
+    border-color: var(--gold);
+  }
+  .btn-ghost:hover::before {
+    transform: perspective(420px) rotateX(0deg);
+  }
+
+  /* Scroll cue */
+  .cue {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-300);
+    color: var(--text-600);
+    font-size: var(--fs-100);
+    animation: fade 1s ease 2s both;
+  }
+  .cue i {
+    position: relative;
+    width: 1px;
+    height: 52px;
+    overflow: hidden;
+    background: var(--line-strong);
+  }
+  .cue i::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold);
+    transform: translate3d(0, -100%, 0);
+    animation: cue 2.2s var(--ease) infinite;
+  }
+  @keyframes cue {
+    60%,
+    100% {
+      transform: translate3d(0, 100%, 0);
+    }
+  }
+
+  /* Dieline položaj (sam crtež je u Dieline.astro) */
+  .hero-die {
+    position: absolute;
+    z-index: -1;
+    right: var(--x-pad);
+    top: 50%;
+    width: min(50vw, 780px);
+    translate: 0 -42%;
+    will-change: transform, opacity;
+  }
+
+  /* Skrol-vođena animacija - samo desktop, gde je dieline sa strane */
+  @media (min-width: 1025px) {
+    @supports (animation-timeline: scroll()) {
+      .hero-die {
+        animation: die-scroll linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 100svh;
+      }
+      @keyframes die-scroll {
+        to {
+          transform: translate3d(0, -9vh, 0) rotate(-3deg) scale(1.07);
+          opacity: 0.15;
+        }
+      }
+    }
+  }
+
+  /* Tablet/mobilni: dieline ispod CTA, u toku strane, manji */
+  @media (max-width: 1024px) {
+    .hero {
+      grid-template-rows: 1fr auto auto;
+    }
+    .hero-copy {
+      padding-block: var(--space-600) var(--space-500);
+    }
+    .hero-die {
+      position: static;
+      translate: none;
+      width: min(100%, 420px);
+      margin: var(--space-300) 0 var(--space-600);
+      will-change: auto;
+    }
+  }
+
+  /* Pauza kad hero nije u vidokrugu (JS prebacuje klasu) */
+  .is-paused *,
+  .is-paused *::before,
+  .is-paused *::after {
+    animation-play-state: paused !important;
+  }
+
+  /* ================= 3D SEKCIJA ================= */
+  .box-sec {
+    padding: var(--section-padding);
+    background: linear-gradient(180deg, var(--bg), var(--bg-raised) 35%, var(--bg));
+  }
+  .stage {
+    position: relative;
+    contain: layout paint;
+    min-height: min(86svh, 860px);
+    border-radius: calc(var(--rounded-3xl) + 0.5rem);
+    border: 1px solid var(--line);
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255, 150, 40, 0.1), transparent 60%),
+      var(--bg-raised);
+  }
+  .stage::before {
+    /* registarske oznake u uglovima, kao na štampi */
+    --c: var(--gold);
+    content: '';
+    position: absolute;
+    inset: 16px;
+    pointer-events: none;
+    opacity: 0.55;
+    background:
+      linear-gradient(var(--c), var(--c)) top left / 20px 1px,
+      linear-gradient(var(--c), var(--c)) top left / 1px 20px,
+      linear-gradient(var(--c), var(--c)) top right / 20px 1px,
+      linear-gradient(var(--c), var(--c)) top right / 1px 20px,
+      linear-gradient(var(--c), var(--c)) bottom left / 20px 1px,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px 20px,
+      linear-gradient(var(--c), var(--c)) bottom right / 20px 1px,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px 20px;
+    background-repeat: no-repeat;
+  }
+
+  /* ================= ASORTIMAN ================= */
+  .range {
+    padding: var(--section-padding);
+  }
+  .range-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: var(--space-400) var(--space-800);
+    align-items: end;
+    margin-bottom: var(--space-700);
+  }
+  .range-head h2 {
+    max-width: 16ch;
+    line-height: 1.05;
+  }
+  .range-head p {
+    max-width: 30rem;
+    font-size: var(--fs-300);
+  }
+ 
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: minmax(270px, auto);
+    gap: var(--space-400);
+  }
+  .card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--space-200);
+    padding: var(--space-500);
+    border: 1px solid var(--line);
+    border-radius: var(--rounded-3xl);
+    background: var(--bg-raised);
+    transition: border-color 0.4s ease;
+  }
+  .card:hover {
+    border-color: var(--line-strong);
+  }
+  .card--a {
+    grid-column: span 4;
+    grid-row: span 2;
+    border-radius: calc(var(--rounded-3xl) + 0.5rem);
+  }
+  .card--b,
+  .card--c {
+    grid-column: span 2;
+  }
+  .card--d,
+  .card--e {
+    grid-column: span 3;
+  }
+ 
+  .card::before {
+    /* zatamnjenje ispod teksta */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to top, rgba(5, 4, 3, 0.95) 0%, rgba(5, 4, 3, 0.6) 38%, rgba(5, 4, 3, 0) 72%);
+  }
+  .media {
+    position: absolute;
+    inset: 0;
+    z-index: -3;
+    overflow: hidden;
+    background: var(--bg-elevated);
+  }
+  .media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--pos, center);
+    filter: saturate(0.9) contrast(1.05); /* statično, ne animira se */
+    transition: transform 1.2s var(--ease);
+    will-change: transform;
+  }
+  .media::after {
+    /* topli ton koji ujednačava različite fotografije; nestaje na hover */
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 110, 20, 0.22), rgba(5, 4, 3, 0.35));
+    transition: opacity 0.6s ease;
+  }
+  .card:hover .media img {
+    transform: scale(1.06);
+  }
+  .card:hover .media::after {
+    opacity: 0;
+  }
+ 
+  .glow {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -2;
+    pointer-events: none;
+    width: 520px;
+    height: 520px;
+    margin: -260px 0 0 -260px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 160, 50, 0.3), rgba(255, 160, 50, 0));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    will-change: transform;
+  }
+  .card:hover .glow {
+    opacity: 1;
+  }
+ 
+  .card h3 {
+    font-size: var(--fs-500);
+    line-height: 1.15;
+    margin-bottom: -3rem;
+    padding-bottom: 3rem;
+  }
+  .card--a h3 {
+    font-size: var(--fs-500);
+    letter-spacing: -0.03em;
+    max-width: 12ch;
+  }
+  .card p {
+    max-width: 38ch;
+    color: var(--text-800);
+  }
+ 
+  /* Skrol-vođeno otkrivanje kartica */
+  @supports (animation-timeline: view()) {
+    .card {
+      animation: card-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    @keyframes card-in {
+      from {
+        opacity: 0;
+        transform: translate3d(0, 36px, 0) scale(0.96);
+      }
+    }
+  }
+ 
+  /* ================= RESPONSIVE ================= */
+  @media (max-width: 1024px) {
+    .range-head {
+      grid-template-columns: 1fr;
+    }
+    .bento {
+      grid-template-columns: 1fr 1fr;
+    }
+    .card--a {
+      grid-column: span 2;
+      grid-row: auto;
+      min-height: 380px;
+    }
+    .card--b,
+    .card--c,
+    .card--d {
+      grid-column: span 1;
+    }
+    .card--e {
+      grid-column: span 2;
+    }
+  }
+  @media (max-width: 640px) {
+    .bento {
+      grid-template-columns: 1fr;
+    }
+    .card--a,
+    .card--b,
+    .card--c,
+    .card--d,
+    .card--e {
+      grid-column: auto;
+    }
+  }
+ 
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+ 
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hero = document.querySelector<HTMLElement>('[data-hero]')!;
+ 
+  /* Pauziraj hero animacije kad nije vidljiv */
+  new IntersectionObserver(([e]) => hero.classList.toggle('is-paused', !e.isIntersecting)).observe(hero);
+ 
+  if (!reduce && matchMedia('(hover: hover)').matches) {
+    /* ---- Hero: reflektor koji glatko prati kursor (samo transform; rAF petlja radi dok se ne smiri) ---- */
+    const spot = hero.querySelector<HTMLElement>('[data-spot]')!;
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, first = true;
+ 
+    const tick = () => {
+      cx += (tx - cx) * 0.12;
+      cy += (ty - cy) * 0.12;
+      spot.style.transform = `translate3d(${cx}px,${cy}px,0)`;
+      raf = Math.abs(tx - cx) + Math.abs(ty - cy) > 0.5 ? requestAnimationFrame(tick) : 0;
+    };
+ 
+    // hero je na vrhu dokumenta pa su pageX/pageY ujedno koordinate unutar njega (bez čitanja layout-a)
+    hero.addEventListener('pointermove', (e) => {
+      tx = e.pageX; ty = e.pageY;
+      if (first) { cx = tx; cy = ty; first = false; spot.classList.add('on'); }
+      if (!raf) raf = requestAnimationFrame(tick);
+    }, { passive: true });
+    hero.addEventListener('pointerleave', () => { spot.classList.remove('on'); first = true; });
+ 
+    /* ---- Kartice: jedan delegirani listener, rect se meri samo kad je zastareo ---- */
+    const grid = document.querySelector<HTMLElement>('[data-bento]')!;
+    let card: HTMLElement | null = null;
+    let glow: HTMLElement | null = null;
+    let rect: DOMRect | null = null;
+    let stale = true, px = 0, py = 0, raf2 = 0;
+ 
+    const paint = () => {
+      raf2 = 0;
+      if (!card || !glow) return;
+      if (stale) { rect = card.getBoundingClientRect(); stale = false; }
+      glow.style.transform = `translate3d(${px - rect!.left}px,${py - rect!.top}px,0)`;
+    };
+ 
+    grid.addEventListener('pointerover', (e) => {
+      const c = (e.target as Element).closest<HTMLElement>('.card');
+      if (!c || c === card) return;
+      card = c; glow = c.querySelector<HTMLElement>('.glow'); stale = true;
+    });
+    grid.addEventListener('pointermove', (e) => {
+      if (!card) return;
+      px = e.clientX; py = e.clientY;
+      if (!raf2) raf2 = requestAnimationFrame(paint);
+    }, { passive: true });
+    grid.addEventListener('pointerleave', () => { card = glow = null; });
+ 
+    const markStale = () => { stale = true; };
+    addEventListener('scroll', markStale, { passive: true });
+    addEventListener('resize', markStale, { passive: true });
+  }
+</script>

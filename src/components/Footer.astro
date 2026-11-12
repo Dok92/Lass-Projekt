@@ -1,0 +1,405 @@
+---
+// import Logo from './Logo.astro';
+const year = new Date().getFullYear();
+
+const phones = [
+  { label: 'Telefon', value: '065 5 803 973', href: 'tel:+381655803973' },
+  { label: 'Telefon', value: '063 800 26 82', href: 'tel:+381638002682' },
+];
+const email = 'lassprojekt@gmail.com';
+const address = 'Cara Dušana 215, Vojka';
+const mapHref = 'https://www.google.com/maps/place/Lass+Projekt/@44.9529766,20.1563857,21z/data=!4m15!1m8!3m7!1s0x475a599e810ef923:0xfb096d8bce265a5c!2z0KbQsNGA0LAg0JTRg9GI0LDQvdCwIDIxNSwg0JLQvtGY0LrQsCAyMjMxMw!3b1!8m2!3d44.9530877!4d20.1564659!16s%2Fg%2F11y34dbsyh!3m5!1s0x475a599e80fc7cf5:0xe4b96b0a247eae72!8m2!3d44.9530707!4d20.1565503!16s%2Fg%2F11rbfnwj2_?entry=ttu&g_ep=EgoyMDI2MTEwOS4wIKXMDSoASAFQAw%3D%3D';
+
+const services = [
+  { t: 'Izrada noževa i alata za štancanje', d: 'Za kartonsku ambalažu, PET foliju, sunđerasti materijal i gumu' },
+  { t: 'Kartonske kutije po meri', d: 'Svih vrsta — E, B i C talas' },
+  { t: 'Prosecanje na štancni i presi', d: 'Čist rez, tačan preklop' },
+  { t: 'Kaširanje kartona i papira', d: 'Spajanje slojeva po želji' },
+  { t: 'Obrada drveta na CNC mašinama', d: 'Lasersko sečenje i gravura' },
+];
+---
+
+<footer class='footer' id='ponuda' aria-labelledby='footer-title'>
+  <div class='footer-inner'>
+    <!-- ===== Poziv + kontakt ===== -->
+    <div class='footer-top'>
+      <div class='pitch'>
+        <h2 id='footer-title'>Pošaljite dimenzije. Mi pravimo ostalo.</h2>
+        <p>
+          U prilici smo da vam ponudimo veliki izbor usluga — od noža za štancanje do gotove kutije po meri.
+          Porodična firma sa višegodišnjim iskustvom i kvalitetom koji nas izdvaja na tržištu.
+        </p>
+        <div class='pitch-actions'>
+          <a class='btn btn-primary' href={phones[0].href}>Pozovite nas</a>
+          <a class='btn btn-ghost' href={`mailto:${email}`}>Pošaljite upit</a>
+        </div>
+      </div>
+
+      <address class='contact'>
+        {phones.map((p) => (
+          <a class='tile' href={p.href}>
+            <span class='tile-label'>{p.label}</span>
+            <span class='tile-value'>{p.value}</span>
+            <span class='tile-act' aria-hidden='true'>Pozovi</span>
+          </a>
+        ))}
+        <a class='tile' href={`mailto:${email}`}>
+          <span class='tile-label'>E-pošta</span>
+          <span class='tile-value tile-value--sm'>{email}</span>
+          <span class='tile-act' aria-hidden='true'>Pošalji</span>
+        </a>
+        <a class='tile' href={mapHref} target='_blank' rel='noopener noreferrer'>
+          <span class='tile-label'>Adresa</span>
+          <span class='tile-value tile-value--sm'>{address}</span>
+          <span class='tile-act' aria-hidden='true'>Mapa</span>
+        </a>
+      </address>
+    </div>
+
+    <!-- ===== Talasasti karton (flute) kao razdelnik ===== -->
+    <div class='flute' aria-hidden='true'><i></i></div>
+
+    <!-- ===== Brend / usluge / navigacija ===== -->
+    <div class='footer-mid'>
+      <div class='f-brand'>
+        <a class='f-logo' href='#' aria-label='Lass Projekt — na vrh'>
+          <svg viewBox='0 0 152.6396 105.33606' aria-hidden='true'><use href='#logo'></use></svg>
+          <span>Lass Projekt</span>
+        </a>
+        <p>Kartonske kutije, alati za štancanje i CNC obrada drveta — iz jedne porodične proizvodnje.</p>
+      </div>
+
+      <nav class='f-services' aria-labelledby='f-services-title'>
+        <h3 id='f-services-title'>Usluge</h3>
+        <ul>
+          {services.map((s) => (
+            <li><strong>{s.t}</strong><span>{s.d}</span></li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class='f-links' aria-labelledby='f-links-title'>
+        <h3 id='f-links-title'>Na stranici</h3>
+        <ul>
+          <li><a href='#kutija'>Kutija</a></li>
+          <li><a href='#asortiman'>Asortiman</a></li>
+          <li><a href='#ponuda'>Ponuda i kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class='footer-bottom'>
+      <p>© {year} Lass Projekt. Sva prava zadržana.</p>
+      <a href='#'>Nazad na vrh</a>
+    </div>
+  </div>
+
+  <div class='wordmark' aria-hidden='true'>Lass Projekt</div>
+</footer>
+
+<style>
+  .footer {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    background: linear-gradient(180deg, var(--bg), var(--bg-raised) 60%);
+    border-top: 1px solid var(--line);
+  }
+  .footer::before {
+    /* topli žar iz dna */
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 70%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(60% 80% at 50% 100%, rgba(255, 110, 20, 0.22), transparent 70%);
+  }
+  .footer-inner {
+    padding: var(--section-padding);
+    padding-bottom: var(--space-400);
+  }
+
+  /* ---------- Poziv + kontakt ---------- */
+  .footer-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: var(--space-700) var(--space-800);
+    align-items: center;
+  }
+  .pitch h2 {
+    font-size: var(--fs-600);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    max-width: 14ch;
+  }
+  .pitch p {
+    max-width: 36rem;
+    margin-top: var(--space-500);
+    font-size: var(--fs-300);
+  }
+  .pitch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-400);
+    margin-top: var(--space-600);
+  }
+
+  .contact {
+    display: grid;
+    gap: var(--space-300);
+    font-style: normal;
+  }
+  .tile {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label act'
+      'value act';
+    gap: 0.15rem var(--space-400);
+    align-items: center;
+    padding: var(--space-400) var(--space-500);
+    border: 1px dashed var(--line-strong); /* linija savijanja */
+    transition: border-color 0.3s ease;
+  }
+  .tile::before {
+    /* poklopac koji se spušta, isti princip kao na ghost dugmetu */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(255, 190, 100, 0.2), rgba(255, 190, 100, 0.04));
+    transform-origin: 50% 0;
+    transform: perspective(500px) rotateX(-90deg);
+    transition: transform 0.65s var(--ease);
+  }
+  .tile:hover,
+  .tile:focus-visible {
+    border-color: var(--gold);
+  }
+  .tile:hover::before,
+  .tile:focus-visible::before {
+    transform: perspective(500px) rotateX(0deg);
+  }
+  .tile-label {
+    grid-area: label;
+    font-size: var(--fs-100);
+    letter-spacing: 0.04em;
+    color: var(--text-600);
+  }
+  .tile-value {
+    grid-area: value;
+    font: 600 var(--fs-500) / 1.15 var(--ff-heading);
+    letter-spacing: -0.015em;
+    color: var(--text-header);
+    overflow-wrap: anywhere;
+  }
+  .tile-value--sm {
+    font-size: var(--fs-400);
+  }
+  .tile-act {
+    grid-area: act;
+    font: 600 var(--fs-100) / 1 var(--ff-heading);
+    color: var(--gold);
+    opacity: 0;
+    transform: translate3d(-8px, 0, 0);
+    transition:
+      opacity 0.4s ease,
+      transform 0.5s var(--ease);
+  }
+  .tile:hover .tile-act,
+  .tile:focus-visible .tile-act {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  /* ---------- Talasasti karton ---------- */
+  .flute {
+    position: relative;
+    height: 24px;
+    margin-block: var(--space-800);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+.flute {
+    position: relative;
+    height: 24px;
+    margin-block: var(--space-800);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+        90deg, transparent, #000 12%, #000 88%, transparent
+    );
+    mask-image: linear-gradient(
+        90deg, transparent, #000 12%, #000 88%, transparent
+    );
+}
+
+.flute i {
+    position: absolute;
+    inset: 0 -48px;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='48' viewBox='0 0 32 16' fill='none' stroke='%23ff9a1f' stroke-opacity='.9' stroke-width='1.3'%3E%3Cpath d='M0 1H32M0 15H32'/%3E%3Cpath d='M0 8C4 -2 12 -2 16 8S28 18 32 8'/%3E%3C/svg%3E");
+
+    background-repeat: repeat-x;
+    background-position: 0 50%;
+    background-size: 48px 24px;
+
+    animation: flute 2s linear infinite;
+    will-change: transform;
+}
+
+@keyframes flute {
+    to {
+        transform: translate3d(48px, 0, 0);
+    }
+}
+
+  /* ---------- Brend / usluge / navigacija ---------- */
+  .footer-mid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 0.8fr);
+    gap: var(--space-700) var(--space-800);
+  }
+  .f-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-300);
+  }
+  .f-logo svg {
+    width: 56px;
+    aspect-ratio: 152.64 / 105.34;
+    display: block;
+  }
+  .f-logo span {
+    font: 700 var(--fs-300) / 1 var(--ff-heading);
+    color: var(--text-header);
+  }
+  .f-brand p {
+    max-width: 26rem;
+    margin-top: var(--space-400);
+  }
+
+  .footer h3 {
+    margin-bottom: var(--space-400);
+    font-size: var(--fs-300);
+  }
+  .footer ul {
+    display: grid;
+    gap: var(--space-300);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .f-services li {
+    position: relative;
+    display: grid;
+    padding-left: var(--space-500);
+  }
+  .f-services li::before {
+    /* mala linija reza kao marker */
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75em;
+    width: 0.9rem;
+    height: 1px;
+    background: var(--gradient-brand);
+  }
+  .f-services strong {
+    font-weight: 600;
+    font-size: var(--fs-200);
+    color: var(--text-800);
+  }
+  .f-services span {
+    font-size: var(--fs-100);
+    color: var(--text-600);
+  }
+  .f-links a {
+    font-size: var(--fs-200);
+    transition: color 0.25s ease;
+  }
+  .f-links a:hover,
+  .footer-bottom a:hover {
+    color: var(--gold);
+  }
+
+  .footer-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-300) var(--space-500);
+    margin-top: var(--space-800);
+    padding-top: var(--space-400);
+    border-top: 1px solid var(--line);
+    font-size: var(--fs-100);
+    color: var(--text-600);
+  }
+  .footer-bottom p {
+    font-size: inherit;
+  }
+
+  /* ---------- Veliki wordmark na dnu ---------- */
+  .wordmark {
+    /* margin-top: var(--space-400); */
+    padding-bottom: 0.16em; /* mesta za rep slova "j" da ne bude odsečen */
+    text-align: center;
+    white-space: nowrap;
+    user-select: none;
+    font: 800 min(15vw, 16rem) / 0.8 var(--ff-heading);
+    letter-spacing: -0.04em;
+    background-image: linear-gradient(180deg, rgba(255, 196, 100, 0.4), rgba(255, 150, 40, 0.06) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Element je na samom kraju stranice, pa timeline mora da se završi čim je ceo ušao u ekran (entry 100%) */
+  @supports (animation-timeline: view()) {
+    .wordmark {
+      animation: wordmark-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+    @keyframes wordmark-in {
+      from {
+        transform: translate3d(0, 30%, 0);
+        opacity: 0;
+      }
+    }
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1024px) {
+    .footer-top {
+      grid-template-columns: 1fr;
+    }
+    .footer-mid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .f-brand {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 640px) {
+    .footer-mid {
+      grid-template-columns: 1fr;
+    }
+    .tile-act {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .flute i,
+    .wordmark {
+      animation: none;
+    }
+    .tile::before,
+    .tile-act {
+      transition: none;
+    }
+  }
+</style>

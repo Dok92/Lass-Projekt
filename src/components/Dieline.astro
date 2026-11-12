@@ -1,0 +1,142 @@
+---
+/**
+ * Dieline — nacrt kutije za štancanje (pravougaone klapne pod 90°).
+ * Crta se pri učitavanju, a po obimu putuje svetleća "laserska" iskra.
+ * Pozicioniranje i veličinu određuje roditelj (komponenta popunjava 100% širine).
+ */
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+
+const xs = [60, 150, 240, 330, 420]; // ivice četiri bočne strane
+const pairs = xs.slice(0, -1).map((x, i) => [x, xs[i + 1]]);
+const Y = { top: 140, bottom: 260, topTip: 102, botTip: 298 };
+
+const gap = 4; // razmak između susednih klapni
+// [levo, desno] svake klapne; razmak samo na unutrašnjim ivicama
+const flaps = pairs.map(([a, b], i) => [i === 0 ? a : a + gap / 2, i === pairs.length - 1 ? b : b - gap / 2]);
+
+const flapTop = ([l, r]) => `M${l} ${Y.top}V${Y.topTip}H${r}V${Y.top}`;
+const flapBot = ([l, r]) => `M${l} ${Y.bottom}V${Y.botTip}H${r}V${Y.bottom}`;
+
+// Spojnice: zatvaraju uski prorez između klapni u podnožju (uz telo kutije), gore i dole
+const bridges = flaps
+  .slice(0, -1)
+  .map(([, r], i) => `M${r} ${Y.top}H${flaps[i + 1][0]}M${r} ${Y.bottom}H${flaps[i + 1][0]}`)
+  .join('');
+
+// Linije reza: preklopni jezičak + proreze + klapne
+const cutD =
+  'M60 150L42 164V236L60 250M60 140V150M60 250V260M420 140V260' +
+  flaps.map(flapTop).join('') +
+  flaps.map(flapBot).join('') +
+  bridges;
+
+// Linije savijanja (isprekidane)
+const creaseD = 'M60 140H420M60 260H420M60 150V250M150 140V260M240 140V260M330 140V260';
+
+// Putanja iskre — ceo obim nacrta
+const sparkD =
+  'M60 150L42 164V236L60 250V260' +
+  flaps.map(([l, r]) => `H${l}V${Y.botTip}H${r}V${Y.bottom}`).join('') +
+  `V${Y.top}` +
+  [...flaps].reverse().map(([l, r]) => `H${r}V${Y.topTip}H${l}V${Y.top}`).join('') +
+  'V150Z';
+---
+
+<svg class={className} viewBox='34 94 394 212' xmlns='http://www.w3.org/2000/svg' aria-hidden='true' focusable='false'>
+  <defs>
+    <linearGradient id='die-g' gradientUnits='userSpaceOnUse' x1='40' y1='100' x2='420' y2='300'>
+      <stop offset='0' stop-color='#ffe3a3'></stop>
+      <stop offset='.5' stop-color='#ff9a1f'></stop>
+      <stop offset='1' stop-color='#ff5a14'></stop>
+    </linearGradient>
+    <radialGradient id='die-spark-g'>
+      <stop offset='0' stop-color='#ffd27a' stop-opacity='.9'></stop>
+      <stop offset='1' stop-color='#ff5a14' stop-opacity='0'></stop>
+    </radialGradient>
+  </defs>
+
+  <path class='crease' d={creaseD}></path>
+  <path class='cut cut-glow' pathLength='1' d={cutD}></path>
+  <path class='cut' pathLength='1' d={cutD}></path>
+
+  <circle class='spark' r='16' fill='url(#die-spark-g)' style={`offset-path:path('${sparkD}')`}></circle>
+  <circle class='spark' r='2.2' fill='#fff4d6' style={`offset-path:path('${sparkD}')`}></circle>
+</svg>
+
+<style>
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .cut {
+    fill: none;
+    stroke: url(#die-g);
+    stroke-width: 1.6;
+    stroke-linecap: square;
+    stroke-linejoin: miter; /* oštri uglovi */
+    stroke-miterlimit: 10;
+    stroke-dasharray: 1;
+    animation: die-draw 2.6s var(--ease, ease-out) 0.2s both;
+  }
+  .cut-glow {
+    stroke-width: 7;
+    opacity: 0.13;
+  }
+  .crease {
+    fill: none;
+    stroke: var(--amber, #ff9a1f);
+    stroke-opacity: 0.55;
+    stroke-width: 1;
+    stroke-dasharray: 5 5;
+    animation: die-fade 1.2s ease 2s both;
+  }
+
+  .spark {
+    display: none;
+    offset-rotate: 0deg;
+  }
+  @supports (offset-path: path('M0 0L1 1')) {
+    .spark {
+      display: block;
+      animation:
+        die-run 7s linear 2.6s infinite,
+        die-fade 0.6s ease 2.6s both;
+    }
+  }
+
+  @keyframes die-draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+  @keyframes die-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes die-run {
+    from {
+      offset-distance: 0%;
+    }
+    to {
+      offset-distance: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cut,
+    .crease,
+    .spark {
+      animation: none;
+    }
+    .spark {
+      display: none;
+    }
+  }
+</style>

@@ -1,0 +1,482 @@
+---
+/**
+ * BoxViewer — 3D kutija (three.js) u stilu #kutija sekcije.
+ * Sam sadrži "stage" izgled (okvir, gradijent, registarske oznake), pa se u sekciji koristi direktno:
+ *   <section class='box-sec' id='kutija'><BoxViewer /></section>
+ * Three.js i model se učitavaju tek kad se sekcija približi ekranu.
+ */
+---
+
+<div class='box-viewer' data-box-viewer>
+  <canvas class='box-canvas' role='img' aria-label='3D prikaz kutije. Prevucite za rotaciju.'></canvas>
+
+  <p class='box-hint' aria-hidden='true'>Prevucite za rotaciju</p>
+  <div class='box-loader' aria-hidden='true'><i></i></div>
+  <p class='box-error' role='status'>3D prikaz trenutno nije dostupan.</p>
+
+  <div class='box-controls'>
+    <input
+      id='box-animation'
+      class='box-slider'
+      type='range'
+      min='0'
+      max='1'
+      step='0.001'
+      value='0'
+      aria-label='Otvaranje i zatvaranje kutije'
+    />
+    <div class='box-slider-labels' aria-hidden='true'>
+      <span>Otvorena</span>
+      <span>Zatvorena</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const MODEL_URL = '/box.glb';
+  const ALLOW_WHEEL_ZOOM = false; // true = točkić zumira (ali "hvata" skrol stranice dok je kursor na kutiji)
+
+  const container = document.querySelector<HTMLElement>('[data-box-viewer]');
+  const canvas = container?.querySelector<HTMLCanvasElement>('.box-canvas');
+  const slider = container?.querySelector<HTMLInputElement>('.box-slider');
+
+  if (!container || !canvas || !slider) throw new Error('BoxViewer: required elements not found.');
+
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Slajder: radi odmah, i pre nego što se učita 3D ---------- */
+  let progress = slider.valueAsNumber || 0;
+  let applyProgress: (() => void) | null = null;
+
+  const paintTrack = () => {
+    slider.style.setProperty('--p', String(progress));
+    slider.setAttribute('aria-valuetext', progress < 0.02 ? 'Otvorena' : progress > 0.98 ? 'Zatvorena' : `Zatvorena ${Math.round(progress * 100)}%`);
+  };
+  slider.addEventListener('input', () => {
+    progress = slider.valueAsNumber;
+    paintTrack();
+    applyProgress?.();
+  });
+  paintTrack();
+
+  /* ---------- Renderovanje po potrebi: nema petlje dok se ništa ne menja ---------- */
+  let visible = false;
+  let started = false;
+  let invalidate: () => void = () => {};
+
+  async function init() {
+    try {
+      const [THREE, { GLTFLoader }, { OrbitControls }] = await Promise.all([
+        import('three'),
+        import('three/addons/loaders/GLTFLoader.js'),
+        import('three/addons/controls/OrbitControls.js'),
+      ]);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas!,
+        antialias: true,
+        alpha: true, // pozadinu daje CSS (isti gradijent kao ostatak sajta)
+        powerPreference: 'high-performance',
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      scene.add(new THREE.HemisphereLight(0xfff8ee, 0x5c4d3c, 2.5));
+
+      const keyLight = new THREE.DirectionalLight(0xfff1dc, 3.8);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      keyLight.shadow.bias = -0.0004;
+      keyLight.shadow.normalBias = 0.02;
+      scene.add(keyLight);
+
+      const fillLight = new THREE.DirectionalLight(0xffbd69, 2.0);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0xff8c42, 2.6);
+      scene.add(rimLight);
+
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.5 }));
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = !reduceMotion;
+      controls.dampingFactor = 0.08;
+      controls.enablePan = false;
+      controls.enableZoom = ALLOW_WHEEL_ZOOM;
+      controls.minPolarAngle = THREE.MathUtils.degToRad(10);
+      controls.maxPolarAngle = THREE.MathUtils.degToRad(85);
+      // jedan prst vertikalno skroluje stranicu, horizontalno rotira kutiju
+      canvas!.style.touchAction = 'pan-y';
+
+      /* ---------- Frame scheduler ---------- */
+      let raf = 0;
+      const frame = () => {
+        raf = 0;
+        if (!visible) return;
+        controls.update(); // šalje 'change' (pa i sledeći frame) samo dok ima kretanja/prigušenja
+        renderer.render(scene, camera);
+      };
+      invalidate = () => {
+        if (!raf && visible) raf = requestAnimationFrame(frame);
+      };
+      controls.addEventListener('change', invalidate);
+      controls.addEventListener('start', () => container!.classList.add('is-touched'), { once: true });
+
+      /* ---------- Model ---------- */
+      const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
+      const model = gltf.scene;
+
+      const box = new THREE.Box3().setFromObject(model);
+      model.position.sub(box.getCenter(new THREE.Vector3()));
+      model.position.y -= new THREE.Box3().setFromObject(model).min.y;
+
+      model.traverse((o) => {
+        if (o instanceof THREE.Mesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+        }
+      });
+      scene.add(model);
+
+      if (gltf.animations.length > 0) {
+        const clip = gltf.animations[0];
+        const mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(clip);
+        action.setLoop(THREE.LoopOnce, 1);
+        action.clampWhenFinished = true;
+        action.play();
+        action.paused = true;
+
+        applyProgress = () => {
+          action.paused = false;
+          mixer.setTime(progress * clip.duration);
+          action.paused = true;
+          invalidate();
+        };
+        applyProgress(); // pozicija slajdera koju je pregledač možda povratio posle osvežavanja
+        addEventListener('pagehide', () => mixer.stopAllAction(), { once: true });
+      }
+
+      /* ---------- Razmeri se računaju iz modela, ne iz fiksnih brojeva ---------- */
+      const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const distance = maxDim * 2.5;
+
+      keyLight.position.set(4, 6, 5).normalize().multiplyScalar(maxDim * 5);
+      fillLight.position.set(-4, 3, 2).normalize().multiplyScalar(maxDim * 5);
+      rimLight.position.set(-2, 3, -5).normalize().multiplyScalar(maxDim * 5);
+
+      const s = maxDim * 1.6;
+      Object.assign(keyLight.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 0.1, far: maxDim * 12 });
+      keyLight.shadow.camera.updateProjectionMatrix();
+
+      ground.scale.setScalar(Math.max(maxDim * 0.5, 0.5));
+      ground.position.y = -maxDim * 0.002;
+
+      controls.minDistance = distance * 0.5;
+      controls.maxDistance = distance * 1.6;
+      camera.position.set(distance * 0.9, distance * 0.65, distance);
+      controls.target.set(0, maxDim * 0.35, 0);
+      controls.update();
+
+      /* ---------- Veličina ---------- */
+      const resize = () => {
+        const w = container!.clientWidth;
+        const h = container!.clientHeight;
+        if (!w || !h) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
+        invalidate();
+      };
+      const resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(container!);
+      resize();
+
+      container!.classList.add('is-ready');
+      invalidate();
+
+      addEventListener('pagehide', () => {
+        cancelAnimationFrame(raf);
+        resizeObserver.disconnect();
+        controls.dispose();
+        renderer.dispose();
+      }, { once: true });
+    } catch (error) {
+      console.error('BoxViewer: init failed', error);
+      container!.classList.add('is-error');
+    }
+  }
+
+  /* Učitaj tek kad se sekcija približi ekranu; renderuj samo dok je vidljiva */
+  new IntersectionObserver(
+    ([entry]) => {
+      visible = entry.isIntersecting;
+      if (!visible) return;
+      if (!started) {
+        started = true;
+        init();
+      } else {
+        invalidate();
+      }
+    },
+    { rootMargin: '400px 0px' }
+  ).observe(container);
+</script>
+
+<style>
+  .box-viewer {
+    position: relative;
+    isolation: isolate;
+    contain: layout paint;
+    width: 100%;
+    height: min(86svh, 860px);
+    min-height: 460px;
+    border-radius: calc(var(--rounded-3xl) + 0.5rem);
+    border: 1px solid var(--line);
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255, 150, 40, 0.1), transparent 60%),
+      var(--bg-raised);
+  }
+
+  /* registarske oznake u uglovima, kao na štampi */
+  .box-viewer::before {
+    --c: var(--gold);
+    content: '';
+    position: absolute;
+    inset: 16px;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.55;
+    background:
+      linear-gradient(var(--c), var(--c)) top left / 20px 1px,
+      linear-gradient(var(--c), var(--c)) top left / 1px 20px,
+      linear-gradient(var(--c), var(--c)) top right / 20px 1px,
+      linear-gradient(var(--c), var(--c)) top right / 1px 20px,
+      linear-gradient(var(--c), var(--c)) bottom left / 20px 1px,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px 20px,
+      linear-gradient(var(--c), var(--c)) bottom right / 20px 1px,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px 20px;
+    background-repeat: no-repeat;
+  }
+
+  /* topli žar ispod kutije */
+  .box-viewer::after {
+    content: '';
+    position: absolute;
+    inset: auto 8% 0;
+    height: 60%;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(60% 70% at 50% 100%, rgba(255, 110, 20, 0.2), transparent);
+  }
+
+  .box-canvas {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.9s ease;
+  }
+  .is-ready .box-canvas {
+    opacity: 1;
+  }
+
+  /* ---------- Pomoćni elementi ---------- */
+  .box-hint {
+    position: absolute;
+    top: var(--space-500);
+    right: var(--space-500);
+    z-index: 2;
+    font-size: var(--fs-100);
+    color: var(--text-600);
+    transition: opacity 0.5s ease;
+  }
+  .is-touched .box-hint,
+  .is-error .box-hint {
+    opacity: 0;
+  }
+
+  .box-loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 2;
+    width: 120px;
+    height: 1px;
+    translate: -50% 0;
+    overflow: hidden;
+    background: var(--line-strong);
+    transition: opacity 0.4s ease;
+  }
+  .box-loader i {
+    position: absolute;
+    inset: 0;
+    background: var(--gold);
+    transform: translate3d(-100%, 0, 0);
+    animation: box-load 1.4s ease-in-out infinite;
+  }
+  .is-ready .box-loader,
+  .is-error .box-loader {
+    opacity: 0;
+  }
+  @keyframes box-load {
+    to {
+      transform: translate3d(100%, 0, 0);
+    }
+  }
+
+  .box-error {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: none;
+    place-items: center;
+    color: var(--text-600);
+  }
+  .is-error .box-error {
+    display: grid;
+  }
+  .is-error .box-controls {
+    display: none;
+  }
+
+  /* ---------- Kontrole ---------- */
+  .box-controls {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-500);
+    z-index: 2;
+    width: min(480px, calc(100% - 2rem));
+    transform: translateX(-50%);
+    padding: var(--space-400) var(--space-500);
+    background: rgba(12, 9, 6, 0.7);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--rounded-2xl);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Popunjeni deo = gradijent sajta; ostatak = isprekidana linija savijanja */
+  .box-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    background:
+      linear-gradient(90deg, var(--gold), var(--amber) 55%, var(--ember)) left center / calc(10px + (100% - 20px) * var(--p, 0)) 3px no-repeat,
+      repeating-linear-gradient(90deg, var(--line-strong) 0 5px, transparent 5px 10px) left center / 100% 1px no-repeat;
+    outline: none;
+    cursor: pointer;
+  }
+  .box-slider:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 6px;
+  }
+
+  /* Klizač sa odsečenim uglom, kao CTA dugme */
+  .box-slider::-webkit-slider-runnable-track {
+    height: 22px;
+    background: transparent;
+  }
+  .box-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 1px;
+    border: 0;
+    background: var(--gradient-brand);
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+    cursor: grab;
+    transition: transform 0.3s var(--ease);
+  }
+  .box-slider::-moz-range-track {
+    height: 22px;
+    background: transparent;
+  }
+  .box-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 0;
+    background: var(--gradient-brand);
+    clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 0 100%);
+    cursor: grab;
+    transition: transform 0.3s var(--ease);
+  }
+  .box-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+  .box-slider:hover::-moz-range-thumb {
+    transform: scale(1.15);
+  }
+  .box-slider:active::-webkit-slider-thumb {
+    cursor: grabbing;
+  }
+  .box-slider:active::-moz-range-thumb {
+    cursor: grabbing;
+  }
+
+  .box-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-200);
+    font-size: var(--fs-100);
+    letter-spacing: 0.02em;
+    color: var(--text-700);
+  }
+
+  @media (max-width: 640px) {
+    .box-viewer {
+      height: 70svh;
+      min-height: 420px;
+      border-radius: var(--rounded-3xl);
+    }
+
+    .box-viewer::before {
+      --c: var(--gold);
+      content: '';
+      position: absolute;
+      inset: 16px;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0.55;
+      background:
+        linear-gradient(var(--c), var(--c)) top left / 20px 1px,
+        linear-gradient(var(--c), var(--c)) top left / 1px 20px,
+        linear-gradient(var(--c), var(--c)) top right / 20px 1px,
+        linear-gradient(var(--c), var(--c)) top right / 1px 20px;
+      background-repeat: no-repeat;
+    }
+
+    .box-controls {
+      bottom: var(--space-400);
+      padding: var(--space-300) var(--space-400);
+    }    
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .box-canvas,
+    .box-hint,
+    .box-loader,
+    .box-slider::-webkit-slider-thumb {
+      transition: none;
+    }
+    .box-loader i {
+      animation: none;
+    }
+  }
+</style>

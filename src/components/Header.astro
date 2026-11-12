@@ -1,0 +1,802 @@
+---
+/**
+ * Header: fiksiran, providan na vrhu, "staklo" + zlatna linija pri skrolu,
+ * sakriva se pri skrolu naniže i vraća pri skrolu naviše.
+ * Desktop (>=1100px): navigacija u isprekidanom "karton" okviru + CTA sa preklopljenim uglom.
+ * Mobilni: animirana hamburger ikonica + fullscreen meni koji se otvara kružnim "reveal"-om.
+ *
+ * Ovde su i <symbol id='logo'> i gradijent #g-gold (uklonjeni iz index.astro).
+ */
+const { pathname } = Astro.url;
+const current = pathname.replace(/\/+$/, '') || '/';
+
+const nav = [
+  {
+    href: '/proizvodnja-alata-za-kartonsku-ambalazu-i-pet-foliju',
+    label: 'Alati za štancanje',
+    title: 'Proizvodnja alata za kartonsku ambalažu i pet foliju'
+  },
+  {
+    href: '/usluge-prosecanja-na-stancni',
+    label: 'Prosecanje na štancni',
+    title: 'Usluge prosecanja na štancni'
+  },
+  {
+    href: '/kasiranje-kartona-i-papira',
+    label: 'Kaširanje',
+    title: 'Kaširanje kartona i papira',
+  },
+  {
+    href: '/obrada-drveta-na-cnc-masinama',
+    label: 'CNC obrada',
+    title: 'Obrada drveta na CNC mašinama'
+  },
+  {
+    href: '/galerija',
+    label: 'Galerija',
+    title: 'Galerija proizvoda i alata'
+  }
+];
+---
+
+<a class='skip-link' href='#main'>Preskoči na sadržaj</a>
+
+<!-- Logo + zajednički gradijent (ranije u index.astro) -->
+<svg width='0' height='0' style='position:absolute' aria-hidden='true' focusable='false'>
+  <defs>
+    <linearGradient id='g-gold' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0' stop-color='#ffd77a'></stop>
+      <stop offset='.55' stop-color='#ff9a1f'></stop>
+      <stop offset='1' stop-color='#ff5a14'></stop>
+    </linearGradient>
+    <symbol id='logo' viewBox='0 0 152.6396 105.33606'>
+      <path transform='translate(158.12032,-89.920891)' fill='url(#g-gold)' d='m -88.295305,194.9228 c -0.945886,-0.26048 -3.446198,-1.02103 -5.55625,-1.69011 -2.110052,-0.66909 -5.741458,-1.76752 -8.069795,-2.44095 -9.38812,-2.71538 -14.2947,-4.15596 -19.84375,-5.82615 -3.20146,-0.9636 -7.01146,-2.08882 -8.46666,-2.50049 -1.45521,-0.41168 -3.77693,-1.11559 -5.15938,-1.56426 -1.38245,-0.44866 -2.72564,-0.81644 -2.98486,-0.81728 -0.73224,-0.002 -0.70909,0.80465 -0.78226,-27.2735 l -0.0693,-26.61051 -9.16818,-9.05065 c -12.50421,-12.3439 -12.33489,-11.54867 -3.00265,-14.10276 1.01865,-0.27879 2.74505,-0.78966 3.83646,-1.13528 1.09141,-0.34562 3.71078,-1.13021 5.82083,-1.74352 2.11005,-0.613322 4.4913,-1.325028 5.29167,-1.581572 0.80036,-0.256545 2.94349,-0.907766 4.7625,-1.447158 3.67331,-1.089249 11.5453,-3.490494 15.21354,-4.640689 1.30969,-0.410659 3.27422,-1.002653 4.36563,-1.315543 1.0914,-0.31289 2.3139,-0.694412 2.71666,-0.847827 2.65119,-1.009873 2.50351,-1.117066 15.40258,11.179409 7.393076,7.0477 6.199361,6.22424 11.117214,7.66898 4.080164,1.19865 8.513614,2.54444 12.170834,3.69449 1.30969,0.41185 5.23875,1.60139 8.73125,2.64343 3.4925,1.04204 7.60016,2.29131 9.12812,2.77616 1.52797,0.48485 4.445,1.37616 6.4823,1.98069 10.74484,3.18833 11.30266,3.41788 11.92499,4.90732 0.46282,1.10769 0.21443,6.65661 -0.26059,5.82149 -0.6809,-1.19707 -2.65752,-3.0383 -4.06979,-3.79103 -1.3103,-0.69839 -9.31209,-3.49015 -10.00161,-3.48948 -0.13136,1.2e-4 -1.60806,-0.42887 -3.28155,-0.95331 -9.24301,-2.89663 -12.23109,-3.82469 -14.02291,-4.35537 -3.04932,-0.90309 -5.59921,-1.68263 -9.78959,-2.9928 -2.11005,-0.65974 -5.120019,-1.55739 -6.688821,-1.99478 -1.568801,-0.43739 -2.963713,-0.86407 -3.099804,-0.94818 -0.304605,-0.18825 -2.545657,0.43104 -10.981162,3.03452 -0.873125,0.26948 -2.778125,0.80856 -4.233331,1.19797 -1.45521,0.3894 -2.93852,0.8254 -3.29625,0.96888 -2.07305,0.83147 -8.04867,2.60302 -21.41736,6.34945 -4.78536,1.34105 -5.58766,0.90766 10.69069,5.77487 2.03729,0.60915 4.15197,1.27551 4.69928,1.48081 1.0837,0.30031 2.14183,0.60423 3.23822,0.889 5.15652,1.28294 4.21116,1.28268 9.789584,2.93584 2.037292,0.60374 4.597136,1.37682 5.688542,1.71795 1.091406,0.34113 2.728515,0.82195 3.638021,1.06848 l 1.653645,0.44825 1.653646,-0.45977 c 0.909505,-0.25287 2.487084,-0.73226 3.505729,-1.0653 1.018646,-0.33305 2.566461,-0.80656 3.439581,-1.05225 0.87313,-0.24569 2.42094,-0.71974 3.43959,-1.05344 1.01864,-0.3337 3.28083,-1.05061 5.02708,-1.59312 3.18268,-0.98879 6.51265,-2.0397 11.28874,-3.56264 9.41834,-3.00322 17.1548,-1.52856 20.82644,3.96976 4.29719,6.43509 4.19545,17.6796 -0.2238,24.73533 -1.48517,2.3712 -6.04253,7.26379 -10.383995,9.50252 -4.341465,2.23874 -9.002885,3.75161 -13.834465,5.26251 -1.60073,0.50057 -4.63683,1.45412 -6.74688,2.119 -2.11005,0.66488 -4.61036,1.42794 -5.55625,1.69569 l -1.71979,0.48682 -0.0712,7.52623 -0.0712,7.52623 -2.44236,0.69397 c -1.3433,0.38169 -3.394864,0.98971 -4.559031,1.35116 -3.112942,0.9665 -3.76295,1.02277 -5.688542,0.49251 z m 0,-14.14721 v -9.88978 l 0.727604,-0.28512 c 0.400182,-0.15681 1.441979,-0.47983 2.315104,-0.71782 0.873125,-0.23798 2.242344,-0.64911 3.042708,-0.91362 2.558006,-0.84539 7.180246,-2.31055 10.451046,-3.31279 3.49686,-1.0715 10.88916,-3.37484 15.21354,-4.74032 7.73369,-2.44204 11.68626,-7.33461 11.32244,-14.01515 -0.40207,-7.38289 -4.15828,-8.83659 -14.10057,-5.45712 -2.61937,0.89035 -5.77453,1.91369 -7.01146,2.2741 -1.23692,0.3604 -3.26099,0.99993 -4.49791,1.42117 -1.23693,0.42124 -2.81451,0.91072 -3.50573,1.08773 l -1.25677,0.32185 v 8.26759 c 0,9.3001 0.334264,8.42404 -2.24896,9.2593 -0.24134,0.078 -6.183159,2.16423 -10.451042,2.76113 V 154.53512 142.2335 l -0.727604,-0.27856 c -0.400183,-0.15322 -1.799167,-0.57738 -3.108854,-0.94259 -1.309688,-0.36521 -4.048125,-1.18383 -6.085417,-1.81915 -6.1193,-1.58229 -12.03398,-3.87672 -18.12396,-5.54154 -0.73439,-0.18947 -5.21418,-1.56595 -9.6195,-2.95573 -1.57995,-0.49843 -3.48495,-1.07449 -4.23333,-1.28013 -0.74839,-0.20564 -1.83696,-0.54226 -2.41904,-0.74804 -0.58209,-0.20579 -1.39556,-0.45415 -1.80772,-0.55191 l -0.74938,-0.17776 0.16806,24.28603 c 0.0924,13.35731 0.25105,24.36125 0.3525,24.45319 0.22167,0.20089 2.83617,1.03063 9.04799,2.87149 10.34052,3.0644 11.87155,3.52396 14.15521,4.24894 1.30969,0.41578 3.0361,0.93393 3.83646,1.15145 3.01806,0.82025 14.767387,4.30845 17.33021,5.14509 0.873125,0.28503 1.676797,0.53012 1.785937,0.54466 0.109141,0.0145 0.198438,-4.42398 0.198438,-9.86336 z m -3.553338,5.95102 c -0.07974,-0.12903 -0.592784,-0.31412 -1.140094,-0.41132 -0.54731,-0.0972 -2.245266,-0.57471 -3.773235,-1.06115 -1.527968,-0.48643 -4.504528,-1.38571 -6.614588,-1.9984 -2.11005,-0.61269 -6.03911,-1.76943 -8.73125,-2.57054 -2.69213,-0.8011 -6.26401,-1.84847 -7.9375,-2.32748 -1.67348,-0.47901 -4.70958,-1.37369 -6.74687,-1.98818 -2.03729,-0.61449 -3.97382,-1.17587 -4.30339,-1.24751 -0.32957,-0.0716 -0.65029,-0.2129 -0.71271,-0.31389 -0.0624,-0.101 -0.1915,-9.80764 -0.28685,-21.57031 l -0.17336,-21.38667 0.4892,0.18967 c 0.26905,0.10432 2.45372,0.79198 4.85482,1.52812 2.40109,0.73615 4.53665,1.42935 4.74568,1.54045 0.32272,0.17152 0.39108,2.63071 0.45317,16.30346 0.0402,8.8558 0.0776,16.17888 0.083,16.27351 0.005,0.0946 0.63492,0.31755 1.39891,0.49538 0.76398,0.17784 2.63922,0.71477 4.16719,1.19319 1.52797,0.47842 4.38547,1.35108 6.35,1.93924 1.96453,0.58817 6.19125,1.85683 9.3927,2.81925 3.201464,0.96243 6.461337,1.92318 7.244167,2.135 0.782831,0.21183 1.526972,0.4492 1.653646,0.52749 0.316546,0.19563 0.298254,10.16528 -0.01865,10.16528 -0.136933,0 -0.314212,-0.10557 -0.393953,-0.23459 z m 56.33771,-66.46625 c -2.18281,-0.71943 -4.68312,-1.49014 -5.55625,-1.71269 -0.87312,-0.22256 -2.48047,-0.68971 -3.57187,-1.03812 -3.43953,-1.09799 -6.89253,-2.17477 -10.58334,-3.30032 -3.32559,-1.01416 -7.70276,-2.37542 -12.43541,-3.8673 -4.27737,-1.34836 -12.08647,-3.74722 -12.964586,-3.98256 -1.761812,-0.47218 -1.226362,-0.89634 7.997156,-6.33489 1.56078,-0.920298 3.16813,-1.904111 3.57188,-2.186251 1.44221,-1.007814 9.95697,-6.181338 11.66332,-7.086575 1.97172,-1.046018 2.3872,-1.042781 5.87181,0.04575 5.5629,1.73776 10.26693,3.160428 17.06563,5.161259 0.87312,0.256958 3.25437,0.965482 5.29166,1.574498 2.03729,0.609016 4.25516,1.264115 4.92859,1.455774 0.67342,0.191659 2.39983,0.706986 3.83645,1.145175 1.43663,0.43818 3.50501,1.05243 4.59642,1.36498 1.09141,0.31256 3.85961,1.16029 6.1515599,1.88385 l 4.16719,1.31556 v 0.63894 c 0,0.48672 -0.29943,0.80725 -1.25677,1.34536 -0.69122,0.38853 -1.55443,0.9098 -1.91823,1.15839 -0.3638,0.24859 -1.19724,0.75521 -1.8520799,1.12583 -2.24076,1.26819 -6.21715,3.69949 -7.01146,4.28705 -1.0311,0.7627 -6.15268,3.85712 -6.38392,3.85712 -0.0978,0 -1.1418,0.61838 -2.32002,1.37417 -1.96702,1.2618 -5.18147,3.15176 -5.27825,3.1034 -0.0224,-0.0112 -1.82667,-0.60898 -4.00948,-1.3284 z'></path>
+    </symbol>
+  </defs>
+</svg>
+
+<header class='site-header' data-header>
+  <div class='bar'>
+    <a class='brand' href='/' aria-label='Lass Projekt - početna strana'>
+      <svg class='brand-mark' viewBox='0 0 152.6396 105.33606' aria-hidden='true'><use href='#logo'></use></svg>
+      <span class='brand-text'>
+        <span class='company'>Lass Projekt</span>
+        <span class='tagline'>Kartonska ambalaža</span>
+      </span>
+    </a>
+
+    <!-- Desktop navigacija -->
+    <nav class='nav' aria-label='Glavna navigacija' data-nav>
+      <ul>
+        {nav.map((n, i) => (
+          <li>
+            <a href={n.href} title={n.title} aria-current={current === n.href ? 'page' : undefined}>
+              <span class='n' aria-hidden='true'>0{i + 1}</span>{n.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <!-- Hamburger -->
+    <button class='burger' type='button' aria-expanded='false' aria-controls='mobile-menu' aria-label='Otvori meni' data-toggle>
+      <span class='bars' aria-hidden='true'><i></i><i></i><i></i></span>
+    </button>
+  </div>
+  <i class='progress' aria-hidden='true'></i>
+</header>
+
+<!-- Mobilni meni (van <header>-a jer backdrop-filter pravi containing block za fixed elemente) -->
+<nav class='menu' id='mobile-menu' aria-label='Mobilna navigacija' data-menu inert>
+  <ul>
+    {nav.map((n, i) => (
+      <li class='m-item' style={`--i:${i}`}>
+        <a class='m-link' href={n.href} aria-current={current === n.href ? 'page' : undefined}>
+          <span class='m-n' aria-hidden='true'>0{i + 1}</span>
+          <span class='m-t'>{n.label}</span>
+          {/* <span class='m-d'>{n.desc}</span> */}
+          <svg class='m-arrow' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='square' aria-hidden='true'>
+            <path d='M4 12h16M13 5l7 7-7 7'></path>
+          </svg>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  <div class='m-foot m-item' style={`--i:${nav.length}`}>
+    <a class='cta-btn m-cta' href='/#ponuda'>Zatražite ponudu</a>
+    <span class='m-note'>Porodična firma</span>
+    <span class='m-note'>Višedecenijsko iskustvo</span>
+  </div>
+</nav>
+
+<style is:global>
+  @property --hfold {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 12px;
+  }
+  :root {
+    --header-h: 68px;
+  }
+  @media (min-width: 1100px) {
+    :root {
+      --header-h: 80px;
+    }
+  }
+  html {
+    scroll-padding-top: var(--header-h);
+  }
+  html.menu-open {
+    overflow: hidden;
+  }
+</style>
+
+<style>
+  /* ---------- Skip link ---------- */
+  .skip-link {
+    position: fixed;
+    z-index: 200;
+    left: var(--space-400);
+    top: -120px;
+    padding: 0.8rem 1.2rem;
+    color: #000;
+    font: 600 var(--fs-100) / 1 var(--ff-body);
+    background: var(--gradient-brand);
+    transition: top 0.25s var(--ease);
+  }
+  .skip-link:focus-visible {
+    top: var(--space-300);
+  }
+
+  /* ---------- Header ---------- */
+  .site-header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 100;
+    height: var(--header-h);
+    transition: transform 0.55s var(--ease);
+    animation: header-in 1s var(--ease) 0.1s backwards; /* backwards: da ne zaključa transform */
+  }
+  .site-header.is-hidden {
+    transform: translate3d(0, -100%, 0);
+  }
+  @keyframes header-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -100%, 0);
+    }
+  }
+
+  /* Staklena pozadina: odvojen sloj, animira se samo opacity */
+  .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(8, 6, 4, 0.86), rgba(8, 6, 4, 0.62));
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 14px 44px -24px rgba(255, 140, 30, 0.35);
+    transition: opacity 0.45s ease;
+  }
+  @supports not (backdrop-filter: blur(1px)) {
+    .site-header::before {
+      background: rgba(8, 6, 4, 0.95);
+    }
+  }
+  /* Zlatna linija sa "sjajem" koji klizi */
+  .site-header::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 190, 100, 0.3) 30%, var(--gold) 50%, rgba(255, 190, 100, 0.3) 70%, transparent 100%) 100% 0 / 200% 100%;
+    transition: opacity 0.45s ease;
+    animation: sheen 7s linear infinite;
+  }
+  .site-header.is-scrolled::before,
+  .site-header.is-scrolled::after {
+    opacity: 1;
+  }
+  .site-header.menu-open::before,
+  .site-header.menu-open::after {
+    opacity: 0;
+  }
+  @keyframes sheen {
+    to {
+      background-position: -100% 0;
+    }
+  }
+
+  /* Progres skrola */
+  .progress {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    opacity: 0;
+    pointer-events: none;
+    background: var(--gradient-brand);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+  @supports (animation-timeline: scroll()) {
+    .progress {
+      opacity: 1;
+      animation: progress linear both;
+      animation-timeline: scroll(root);
+    }
+    .site-header.menu-open .progress {
+      opacity: 0;
+    }
+    @keyframes progress {
+      to {
+        transform: scaleX(1);
+      }
+    }
+  }
+
+  .bar {
+    height: 100%;
+    max-width: 1800px;
+    margin-inline: auto;
+    padding-inline: var(--x-pad);
+    display: flex;
+    align-items: center;
+    gap: var(--space-400);
+  }
+
+  /* ---------- Brend ---------- */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-300);
+    margin-right: auto;
+  }
+  .brand-mark {
+    width: clamp(46px, 4.2vw, 60px);
+    aspect-ratio: 152.64 / 105.34;
+    display: block;
+    transition:
+      filter 0.5s var(--ease),
+      transform 0.5s var(--ease);
+  }
+  .brand:hover .brand-mark {
+    transform: translate3d(0, -1px, 0) scale(1.05);
+    filter: drop-shadow(0 0 14px rgba(255, 150, 30, 0.55));
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.38em;
+  }
+  .company {
+    font: 900 var(--fs-300) / 1 var(--ff-heading);
+    font-style: italic;
+    color: var(--text-header);
+    transition: color 0.4s ease;
+  }
+  .brand:hover .company {
+    color: var(--gold);
+  }
+  .tagline {
+    font: 400 0.625rem / 1 var(--ff-body);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-600);
+  }
+
+  /* ---------- Desktop navigacija ---------- */
+  .nav,
+  .cta-desktop {
+    display: none;
+  }
+
+  /* ---------- CTA: dugme kao kutija sa preklopljenim uglom ---------- */
+  .cta-btn {
+    --hfold: 12px;
+    position: relative;
+    isolation: isolate;
+    display: inline-block;
+    padding: 0.85rem 1.5rem;
+    color: #000;
+    font: 600 0.875rem / 1 var(--ff-heading);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    background:
+      repeating-linear-gradient(90deg, rgba(70, 25, 0, 0.1) 0 2px, transparent 2px 7px),
+      var(--gradient-brand);
+    clip-path: polygon(0 0, calc(100% - var(--hfold)) 0, 100% var(--hfold), 100% 100%, 0 100%);
+    transition: --hfold 0.5s var(--ease);
+  }
+  .cta-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--hfold);
+    height: var(--hfold);
+    background: linear-gradient(135deg, #fff0c9, #e8861a);
+    clip-path: polygon(0 0, 0 100%, 100% 100%);
+  }
+  .cta-btn:hover {
+    --hfold: 22px;
+  }
+  .cta-btn:active {
+    --hfold: 0px;
+    transition-duration: 0.12s;
+  }
+  .cta-btn:focus-visible {
+    outline-offset: -6px;
+    outline-color: var(--bg);
+  }
+
+  /* ---------- Hamburger ---------- */
+  .burger {
+    position: relative;
+    flex: none;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: inherit;
+    cursor: pointer;
+    background: rgba(255, 190, 100, 0.05);
+    border: 1px dashed var(--line-strong);
+    transition:
+      border-color 0.35s ease,
+      background-color 0.35s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .burger::after {
+    /* preklopljen ugao */
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, #fff0c9, #e8861a);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    transition:
+      width 0.5s var(--ease),
+      height 0.5s var(--ease);
+  }
+  .burger:hover,
+  .burger[aria-expanded='true'] {
+    border-color: var(--gold);
+    background-color: rgba(255, 190, 100, 0.1);
+  }
+  .burger[aria-expanded='true'] {
+    border-style: solid;
+  }
+  .burger[aria-expanded='true']::after {
+    width: 18px;
+    height: 18px;
+  }
+  .bars {
+    position: relative;
+    display: block;
+    width: 22px;
+    height: 16px;
+  }
+  .bars i {
+    position: absolute;
+    right: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--gradient-brand);
+    transform-origin: 50% 50%;
+    transition:
+      transform 0.55s var(--ease),
+      width 0.4s var(--ease),
+      opacity 0.25s ease;
+  }
+  .bars i:nth-child(1) {
+    top: 0;
+  }
+  .bars i:nth-child(2) {
+    top: 7px;
+    width: 62%;
+  }
+  .bars i:nth-child(3) {
+    top: 14px;
+    width: 82%;
+  }
+  .burger:hover .bars i:nth-child(2),
+  .burger:hover .bars i:nth-child(3) {
+    width: 100%;
+  }
+  .burger[aria-expanded='true'] .bars i:nth-child(1) {
+    transform: translate3d(0, 7px, 0) rotate(45deg);
+  }
+  .burger[aria-expanded='true'] .bars i:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  .burger[aria-expanded='true'] .bars i:nth-child(3) {
+    width: 100%;
+    transform: translate3d(0, -7px, 0) rotate(-45deg);
+  }
+
+  /* ---------- Mobilni meni ---------- */
+  .menu {
+    --cx: calc(100% - var(--x-pad) - 24px); /* centar hamburger dugmeta */
+    --cy: calc(var(--header-h) / 2);
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    padding: calc(var(--header-h) + var(--space-500)) var(--x-pad) var(--space-600);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--bg);
+    visibility: hidden;
+    clip-path: circle(0px at var(--cx) var(--cy));
+    transition:
+      clip-path 0.85s var(--ease),
+      visibility 0s linear 0.85s;
+  }
+  .menu.is-open {
+    visibility: visible;
+    clip-path: circle(150vmax at var(--cx) var(--cy));
+    transition:
+      clip-path 0.95s var(--ease),
+      visibility 0s;
+  }
+  .menu::before {
+    /* gradijenti + "talasi" kartona */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(70vmax 50vmax at 105% 105%, rgba(255, 106, 20, 0.4), transparent 70%),
+      radial-gradient(60vmax 45vmax at -15% -10%, rgba(255, 196, 80, 0.16), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(255, 190, 100, 0.025) 0 2px, transparent 2px 9px);
+  }
+  .menu::after {
+    /* šum */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.06;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px dashed var(--line-strong);
+  }
+  .menu li {
+    border-bottom: 1px dashed var(--line-strong);
+  }
+
+  /* Stagger ulaz stavki (kašnjenje samo pri otvaranju) */
+  .m-item {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    transition:
+      opacity 0.4s ease,
+      transform 0.5s var(--ease);
+  }
+  .menu.is-open .m-item {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.7s ease calc(0.3s + var(--i) * 0.08s),
+      transform 0.9s var(--ease) calc(0.3s + var(--i) * 0.08s);
+  }
+
+  .m-link {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      'n t a'
+      '. d a';
+    align-items: center;
+    column-gap: var(--space-400);
+    row-gap: 0.4rem;
+    padding: var(--space-400) 0;
+  }
+  .m-n {
+    grid-area: n;
+    font: 500 0.75rem / 1 var(--ff-body);
+    letter-spacing: 0.15em;
+    color: var(--amber);
+  }
+  .m-t {
+    grid-area: t;
+    width: fit-content;
+    font: 400 clamp(1.45rem, 6vw, 2.1rem) / 1.1 var(--ff-heading);
+    letter-spacing: -0.02em;
+    color: transparent;
+    background-image: var(--gradient-heading);
+    background-size: 170% 100%;
+    background-position: 0 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    transition: background-position 0.7s var(--ease);
+  }
+  .m-d {
+    grid-area: d;
+    font: 400 0.8125rem / 1.45 var(--ff-body);
+    color: var(--text-600);
+  }
+  .m-arrow {
+    grid-area: a;
+    color: var(--gold);
+    opacity: 0.55;
+    transform: translate3d(-8px, 0, 0);
+    transition:
+      transform 0.5s var(--ease),
+      opacity 0.3s ease;
+  }
+  .m-link:hover .m-t,
+  .m-link:focus-visible .m-t,
+  .m-link[aria-current='page'] .m-t {
+    background-position: 100% 0;
+  }
+  .m-link:hover .m-arrow,
+  .m-link:focus-visible .m-arrow,
+  .m-link[aria-current='page'] .m-arrow {
+    opacity: 1;
+    transform: none;
+  }
+  .m-link[aria-current='page'] .m-n {
+    color: var(--gold);
+  }
+  .m-link:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .m-foot {
+    margin-top: auto;
+    padding-top: var(--space-600);
+    display: grid;
+    gap: var(--space-400);
+  }
+  .m-cta {
+    --hfold: 18px;
+    padding: 1.15rem 1.5rem;
+    text-align: center;
+    font-size: var(--fs-200);
+  }
+  .m-cta:hover {
+    --hfold: 28px;
+  }
+  .m-note {
+    font: 500 0.8rem / 1.4 var(--ff-body);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--text-600);
+  }
+
+  /* ---------- Desktop (>= 1100px) ---------- */
+
+  @media (min-width: 1100px) {
+    .bar {
+      padding-inline: clamp(1.5rem, 3vw, 3rem);
+      gap: var(--space-500);
+    }
+    .burger,
+    .menu {
+      display: none;
+    }
+    .nav {
+      display: block;
+    }
+    .cta-desktop {
+      display: inline-block;
+    }   
+
+    .nav ul {
+      position: relative;
+      display: flex;
+      gap: 2px;
+      margin: 0;
+      padding: 4px;
+      list-style: none;
+      border: 1px dashed var(--line-strong);
+      background: rgba(12, 9, 6, 0.45);
+    }
+    /* registarske oznake na uglovima, kao na štampi */
+    .nav ul::before,
+    .nav ul::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      pointer-events: none;
+      border: 0 solid var(--gold);
+    }
+    .nav ul::before {
+      top: -3px;
+      left: -3px;
+      border-width: 2px 0 0 2px;
+    }
+    .nav ul::after {
+      right: -3px;
+      bottom: -3px;
+      border-width: 0 2px 2px 0;
+    }
+
+    .nav a {
+      position: relative;
+      isolation: isolate;
+      display: block;
+      padding: 0.8rem 1rem;
+      font: 400 0.875rem / 1 var(--ff-body);
+      letter-spacing: 0.01em;
+      color: var(--text-800);
+      white-space: nowrap;
+      transition: color 0.3s ease;
+    }
+    .nav a::before {
+      /* svetlo koje prati kursor */
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      opacity: 0;
+      background: radial-gradient(130px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 170, 60, 0.26), transparent 70%);
+      transition: opacity 0.3s ease;
+    }
+    .nav a::after {
+      /* podvlaka koja "izlazi" sa jedne strane */
+      content: '';
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: 0.4rem;
+      height: 2px;
+      background: var(--gradient-brand);
+      transform: scaleX(0);
+      transform-origin: 100% 50%;
+      transition: transform 0.5s var(--ease);
+    }
+    .nav a:hover,
+    .nav a:focus-visible {
+      color: var(--text-900);
+    }
+    .nav a:hover::before {
+      opacity: 1;
+    }
+    .nav a:hover::after,
+    .nav a:focus-visible::after {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+    }
+    .nav a[aria-current='page'] {
+      color: var(--gold);
+    }
+    .nav a[aria-current='page']::after {
+      transform: scaleX(1);
+      transform-origin: 0 50%;
+      box-shadow: 0 0 12px rgba(255, 150, 30, 0.65);
+    }
+    .nav .n {
+      margin-right: 0.55em;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      color: var(--amber);
+      opacity: 0.7;
+      vertical-align: 0.35em;
+      transition: opacity 0.3s ease;
+    }
+    .nav a:hover .n,
+    .nav a[aria-current='page'] .n {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header,
+    .site-header *,
+    .site-header::before,
+    .site-header::after,
+    .menu,
+    .menu *,
+    .skip-link {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+
+<script>
+  const html = document.documentElement;
+  const header = document.querySelector<HTMLElement>('[data-header]')!;
+  const toggle = header.querySelector<HTMLButtonElement>('[data-toggle]')!;
+  const menu = document.querySelector<HTMLElement>('[data-menu]')!;
+  const nav = header.querySelector<HTMLElement>('[data-nav]')!;
+  const desktop = matchMedia('(min-width: 1100px)');
+  const behind = ['main', 'footer'].map((s) => document.querySelector<HTMLElement>(s)).filter(Boolean) as HTMLElement[];
+
+  /* ---------- Mobilni meni ---------- */
+  let open = false;
+  const setOpen = (v: boolean, returnFocus = false) => {
+    if (open === v) return;
+    open = v;
+    menu.classList.toggle('is-open', v);
+    menu.inert = !v;
+    header.classList.toggle('menu-open', v);
+    html.classList.toggle('menu-open', v);
+    toggle.setAttribute('aria-expanded', String(v));
+    toggle.setAttribute('aria-label', v ? 'Zatvori meni' : 'Otvori meni');
+    behind.forEach((el) => (el.inert = v));
+    if (v) {
+      header.classList.remove('is-hidden');
+      menu.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+    } else if (returnFocus) {
+      toggle.focus();
+    }
+  };
+
+  toggle.addEventListener('click', () => setOpen(!open));
+  menu.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('a')) setOpen(false);
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && open) setOpen(false, true);
+  });
+  desktop.addEventListener('change', (e) => {
+    if (e.matches) setOpen(false);
+  });
+
+  /* ---------- Skrol: staklo + sakrij/prikaži ---------- */
+  let lastY = scrollY;
+  let ticking = false;
+  const onScroll = () => {
+    ticking = false;
+    const y = scrollY;
+    header.classList.toggle('is-scrolled', y > 12);
+    if (open) return;
+    const d = y - lastY;
+    if (y < 160) {
+      header.classList.remove('is-hidden');
+      lastY = y;
+    } else if (Math.abs(d) > 6) {
+      header.classList.toggle('is-hidden', d > 0);
+      lastY = y;
+    }
+  };
+  addEventListener(
+    'scroll',
+    () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(onScroll);
+      }
+    },
+    { passive: true },
+  );
+  header.addEventListener('focusin', () => header.classList.remove('is-hidden'));
+  onScroll();
+
+  /* ---------- Desktop: svetlo koje prati kursor po linku ---------- */
+  if (matchMedia('(hover: hover)').matches) {
+    nav.addEventListener(
+      'pointermove',
+      (e) => {
+        const a = (e.target as Element).closest<HTMLElement>('a');
+        if (!a) return;
+        const r = a.getBoundingClientRect();
+        a.style.setProperty('--mx', `${e.clientX - r.left}px`);
+        a.style.setProperty('--my', `${e.clientY - r.top}px`);
+      },
+      { passive: true },
+    );
+  }
+</script>
