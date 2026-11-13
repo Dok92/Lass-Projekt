@@ -5,6 +5,13 @@
  *   <section class='box-sec' id='kutija'><BoxViewer /></section>
  * Three.js i model se učitavaju tek kad se sekcija približi ekranu.
  */
+
+/**
+ * Lista kutija za padajući meni. Za novu kutiju dodajte red:
+ *   { id: 'jedinstveni-id', name: 'Naziv u meniju', model: '/putanja/do/modela.glb' }
+ * Prva u nizu je izabrana pri učitavanju. Svaki model treba da ima animaciju otvaranja/zatvaranja (slajder).
+ */
+const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija', model: '/box.glb' }];
 ---
 
 <div class='box-viewer' data-box-viewer>
@@ -12,6 +19,30 @@
 
   <p class='box-hint' aria-hidden='true'>Prevucite za rotaciju</p>
   <div class='box-loader' aria-hidden='true'><i></i></div>
+
+  <div class='box-select' data-box-select>
+    <button
+      type='button'
+      class='box-select-btn'
+      aria-haspopup='listbox'
+      aria-expanded='false'
+      aria-controls='box-select-list'
+      aria-labelledby='box-select-label box-select-value'
+    >
+      <span class='box-select-label' id='box-select-label'>Kutija</span>
+      <span class='box-select-value' id='box-select-value'>{boxes[0].name}</span>
+      <svg class='box-select-chevron' viewBox='0 0 12 8' width='12' height='8' aria-hidden='true' focusable='false'>
+        <path d='M1 1.5l5 5 5-5' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='square' />
+      </svg>
+    </button>
+    <ul class='box-select-list' id='box-select-list' role='listbox' tabindex='-1' aria-labelledby='box-select-label'>
+      {boxes.map((b, i) => (
+        <li role='option' id={`box-opt-${b.id}`} data-url={b.model} aria-selected={i === 0 ? 'true' : 'false'}>
+          {b.name}
+        </li>
+      ))}
+    </ul>
+  </div>
   <p class='box-error' role='status'>3D prikaz trenutno nije dostupan.</p>
 
   <div class='box-controls'>
@@ -43,6 +74,84 @@
   if (!container || !canvas || !slider) throw new Error('BoxViewer: required elements not found.');
 
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Padajući meni za izbor kutije (listbox, tastatura + miš) ---------- */
+  const selectRoot = container.querySelector<HTMLElement>('[data-box-select]')!;
+  const selectBtn = selectRoot.querySelector<HTMLButtonElement>('.box-select-btn')!;
+  const selectValue = selectRoot.querySelector<HTMLElement>('.box-select-value')!;
+  const selectList = selectRoot.querySelector<HTMLElement>('.box-select-list')!;
+  const options = Array.from(selectList.querySelectorAll<HTMLElement>('[role="option"]'));
+
+  let currentUrl = options[0].dataset.url!;
+  let selectedIndex = 0;
+  let activeIndex = 0;
+  let onModelChange: ((url: string) => void) | null = null;
+
+  const setActive = (i: number) => {
+    activeIndex = (i + options.length) % options.length;
+    options.forEach((o, n) => o.classList.toggle('is-active', n === activeIndex));
+    selectList.setAttribute('aria-activedescendant', options[activeIndex].id);
+    options[activeIndex].scrollIntoView({ block: 'nearest' });
+  };
+  const markSelected = (i: number) => {
+    selectedIndex = i;
+    options.forEach((o, n) => o.setAttribute('aria-selected', String(n === i)));
+    selectValue.textContent = options[i].textContent!.trim();
+  };
+
+  const onOutside = (e: PointerEvent) => {
+    if (!selectRoot.contains(e.target as Node)) closeSelect(false);
+  };
+  function openSelect() {
+    selectRoot.classList.add('is-open');
+    selectBtn.setAttribute('aria-expanded', 'true');
+    setActive(selectedIndex);
+    selectList.focus({ preventScroll: true });
+    document.addEventListener('pointerdown', onOutside);
+  }
+  function closeSelect(refocus: boolean) {
+    selectRoot.classList.remove('is-open');
+    selectBtn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('pointerdown', onOutside);
+    if (refocus) selectBtn.focus({ preventScroll: true });
+  }
+  function choose(i: number) {
+    closeSelect(true);
+    if (i === selectedIndex) return;
+    markSelected(i);
+    currentUrl = options[i].dataset.url!;
+    onModelChange?.(currentUrl);
+  }
+  /** Vraća izbor na model koji je stvarno na sceni (ako učitavanje novog ne uspe) */
+  const revertSelection = (url: string) => {
+    const i = options.findIndex((o) => o.dataset.url === url);
+    if (i >= 0) markSelected(i);
+    currentUrl = url;
+  };
+
+  selectBtn.addEventListener('click', () => (selectRoot.classList.contains('is-open') ? closeSelect(false) : openSelect()));
+  selectBtn.addEventListener('keydown', (e) => {
+    if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      openSelect();
+    }
+  });
+  selectList.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowDown': e.preventDefault(); setActive(activeIndex + 1); break;
+      case 'ArrowUp': e.preventDefault(); setActive(activeIndex - 1); break;
+      case 'Home': e.preventDefault(); setActive(0); break;
+      case 'End': e.preventDefault(); setActive(options.length - 1); break;
+      case 'Enter':
+      case ' ': e.preventDefault(); choose(activeIndex); break;
+      case 'Escape': e.preventDefault(); closeSelect(true); break;
+      case 'Tab': closeSelect(false); break;
+    }
+  });
+  options.forEach((o, n) => {
+    o.addEventListener('pointerover', () => setActive(n));
+    o.addEventListener('click', () => choose(n));
+  });
 
   /* ---------- Slajder: radi odmah, i pre nego što se učita 3D ---------- */
   let progress = slider.valueAsNumber || 0;
@@ -130,62 +239,127 @@
       controls.addEventListener('change', invalidate);
       controls.addEventListener('start', () => container!.classList.add('is-touched'), { once: true });
 
-      /* ---------- Model ---------- */
-      const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
-      const model = gltf.scene;
+      /* ---------- Modeli: učitavanje, keš i prebacivanje ---------- */
+      interface Entry {
+        model: import('three').Object3D;
+        mixer: import('three').AnimationMixer | null;
+        action: import('three').AnimationAction | null;
+        duration: number;
+      }
+      const loader = new GLTFLoader();
+      const cache = new Map<string, Entry>();
+      const defaultDir = new THREE.Vector3(0.9, 0.65, 1).normalize();
+      let current: Entry | null = null;
+      let framed = false;
+      let loadToken = 0;
+      let shownUrl = currentUrl;
 
-      const box = new THREE.Box3().setFromObject(model);
-      model.position.sub(box.getCenter(new THREE.Vector3()));
-      model.position.y -= new THREE.Box3().setFromObject(model).min.y;
+      async function loadEntry(url: string): Promise<Entry> {
+        const hit = cache.get(url);
+        if (hit) return hit;
 
-      model.traverse((o) => {
-        if (o instanceof THREE.Mesh) {
-          o.castShadow = true;
-          o.receiveShadow = true;
-        }
-      });
-      scene.add(model);
+        const gltf = await loader.loadAsync(url);
+        const model = gltf.scene;
 
-      if (gltf.animations.length > 0) {
-        const clip = gltf.animations[0];
-        const mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(clip);
-        action.setLoop(THREE.LoopOnce, 1);
-        action.clampWhenFinished = true;
-        action.play();
-        action.paused = true;
+        const box = new THREE.Box3().setFromObject(model);
+        model.position.sub(box.getCenter(new THREE.Vector3()));
+        model.position.y -= new THREE.Box3().setFromObject(model).min.y;
 
-        applyProgress = () => {
-          action.paused = false;
-          mixer.setTime(progress * clip.duration);
+        model.traverse((o) => {
+          if (o instanceof THREE.Mesh) {
+            o.castShadow = true;
+            o.receiveShadow = true;
+          }
+        });
+
+        let mixer: Entry['mixer'] = null;
+        let action: Entry['action'] = null;
+        let duration = 0;
+        if (gltf.animations.length > 0) {
+          const clip = gltf.animations[0];
+          mixer = new THREE.AnimationMixer(model);
+          action = mixer.clipAction(clip);
+          action.setLoop(THREE.LoopOnce, 1);
+          action.clampWhenFinished = true;
+          action.play();
           action.paused = true;
-          invalidate();
-        };
-        applyProgress(); // pozicija slajdera koju je pregledač možda povratio posle osvežavanja
-        addEventListener('pagehide', () => mixer.stopAllAction(), { once: true });
+          duration = clip.duration;
+        }
+
+        const entry: Entry = { model, mixer, action, duration };
+        cache.set(url, entry);
+        return entry;
       }
 
-      /* ---------- Razmeri se računaju iz modela, ne iz fiksnih brojeva ---------- */
-      const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const distance = maxDim * 2.5;
+      applyProgress = () => {
+        const e = current;
+        if (!e?.action || !e.mixer) return;
+        e.action.paused = false;
+        e.mixer.setTime(progress * e.duration);
+        e.action.paused = true;
+        invalidate();
+      };
 
-      keyLight.position.set(4, 6, 5).normalize().multiplyScalar(maxDim * 5);
-      fillLight.position.set(-4, 3, 2).normalize().multiplyScalar(maxDim * 5);
-      rimLight.position.set(-2, 3, -5).normalize().multiplyScalar(maxDim * 5);
+      /* Razmere se računaju iz modela, ne iz fiksnih brojeva */
+      function frameModel(model: Entry['model']) {
+        const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const distance = maxDim * 2.5;
 
-      const s = maxDim * 1.6;
-      Object.assign(keyLight.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 0.1, far: maxDim * 12 });
-      keyLight.shadow.camera.updateProjectionMatrix();
+        keyLight.position.set(4, 6, 5).normalize().multiplyScalar(maxDim * 5);
+        fillLight.position.set(-4, 3, 2).normalize().multiplyScalar(maxDim * 5);
+        rimLight.position.set(-2, 3, -5).normalize().multiplyScalar(maxDim * 5);
 
-      ground.scale.setScalar(Math.max(maxDim * 0.5, 0.5));
-      ground.position.y = -maxDim * 0.002;
+        const s = maxDim * 1.6;
+        Object.assign(keyLight.shadow.camera, { left: -s, right: s, top: s, bottom: -s, near: 0.1, far: maxDim * 12 });
+        keyLight.shadow.camera.updateProjectionMatrix();
 
-      controls.minDistance = distance * 0.5;
-      controls.maxDistance = distance * 1.6;
-      camera.position.set(distance * 0.9, distance * 0.65, distance);
-      controls.target.set(0, maxDim * 0.35, 0);
-      controls.update();
+        ground.scale.setScalar(Math.max(maxDim * 0.5, 0.5));
+        ground.position.y = -maxDim * 0.002;
+
+        controls.minDistance = distance * 0.5;
+        controls.maxDistance = distance * 1.6;
+        controls.target.set(0, maxDim * 0.35, 0);
+
+        // pri promeni kutije zadrži ugao posmatranja, a razdaljinu prilagodi novom modelu
+        const dir = framed ? camera.position.clone().sub(controls.target).normalize() : defaultDir;
+        camera.position.copy(controls.target).addScaledVector(dir, distance * 1.494);
+        controls.update();
+        framed = true;
+      }
+
+      function show(entry: Entry) {
+        if (current) scene.remove(current.model);
+        current = entry;
+        scene.add(entry.model);
+        container!.classList.toggle('no-anim', !entry.action);
+        applyProgress?.(); // pozicija slajdera važi i za novu kutiju
+        frameModel(entry.model);
+        invalidate();
+      }
+
+      async function requestModel(url: string) {
+        const token = ++loadToken;
+        container!.classList.add('is-switching');
+        try {
+          const entry = await loadEntry(url);
+          if (token === loadToken) {
+            show(entry);
+            shownUrl = url;
+          }
+        } catch (error) {
+          if (!current) throw error; // prvo učitavanje: prikaži poruku o grešci
+          console.error('BoxViewer: model load failed', error);
+          if (token === loadToken) revertSelection(shownUrl);
+        } finally {
+          if (token === loadToken) container!.classList.remove('is-switching');
+        }
+      }
+
+      const initialUrl = currentUrl;
+      await requestModel(initialUrl);
+      onModelChange = (url) => void requestModel(url);
+      if (currentUrl !== initialUrl) void requestModel(currentUrl); // izabrano dok se three.js učitavao
 
       /* ---------- Veličina ---------- */
       const resize = () => {
@@ -362,7 +536,7 @@
     padding: var(--space-400) var(--space-500);
     background: rgba(12, 9, 6, 0.7);
     border: 1px solid var(--line-strong);
-    border-radius: var(--rounded-2xl);
+    border-radius: var(--rounded-xl);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -439,6 +613,134 @@
     color: var(--text-700);
   }
 
+  /* ---------- Izbor kutije (padajući meni) ---------- */
+  .box-select {
+    position: absolute;
+    top: var(--space-500);
+    left: var(--space-500);
+    z-index: 4;
+    width: min(300px, calc(100% - 2 * var(--space-500)));
+  }
+  .box-select-btn {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'label chev'
+      'value chev';
+    gap: 0.1rem var(--space-300);
+    align-items: center;
+    width: 100%;
+    padding: var(--space-300) var(--space-400);
+    font: inherit;
+    text-align: left;
+    color: var(--text-header);
+    cursor: pointer;
+    background: rgba(12, 9, 6, 0.7);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--rounded-xl);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color 0.3s ease;
+  }
+  .box-select-btn:hover,
+  .is-open .box-select-btn {
+    border-color: var(--gold);
+  }
+  .box-select-btn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 4px;
+  }
+  .box-select-label {
+    grid-area: label;
+    font-size: var(--fs-100);
+    letter-spacing: 0.04em;
+    color: var(--text-600);
+  }
+  .box-select-value {
+    grid-area: value;
+    font: 600 var(--fs-200) / 1.25 var(--ff-heading);
+    letter-spacing: -0.01em;
+  }
+  .box-select-chevron {
+    grid-area: chev;
+    color: var(--gold);
+    transition: transform 0.4s var(--ease);
+  }
+  .is-open .box-select-chevron {
+    transform: rotate(180deg);
+  }
+
+  .box-select-list {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    max-height: 50vh;
+    overflow-y: auto;
+    background: rgba(12, 9, 6, 0.92);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--rounded-2xl);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    outline: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(0, -6px, 0);
+    transition:
+      opacity 0.25s ease,
+      transform 0.4s var(--ease),
+      visibility 0s linear 0.4s;
+  }
+  .is-open .box-select-list {
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+    transition-delay: 0s;
+  }
+  .box-select-list [role='option'] {
+    position: relative;
+    padding: 0.7rem 0.9rem 0.7rem 1.25rem;
+    font-size: var(--fs-200);
+    line-height: 1.3;
+    color: var(--text-700);
+    border-radius: var(--rounded-lg);
+    cursor: pointer;
+  }
+  .box-select-list [role='option'].is-active {
+    background: rgba(255, 190, 100, 0.1);
+    color: var(--text-900);
+  }
+  .box-select-list [role='option'][aria-selected='true'] {
+    color: var(--text-900);
+    font-weight: 600;
+  }
+  .box-select-list [role='option'][aria-selected='true']::before {
+    /* linija reza kao oznaka izbora */
+    content: '';
+    position: absolute;
+    left: 0.45rem;
+    top: 50%;
+    width: 0.55rem;
+    height: 2px;
+    background: var(--gradient-brand);
+  }
+  .is-error .box-select,
+  .no-anim .box-controls {
+    display: none;
+  }
+
+  /* prebacivanje kutije: kratko utamni scenu i pokaži loader */
+  .is-switching .box-canvas {
+    opacity: 0;
+    transition-duration: 0.25s;
+  }
+  .is-ready.is-switching .box-loader {
+    opacity: 1;
+  }
+
   @media (max-width: 640px) {
     .box-viewer {
       height: 70svh;
@@ -446,20 +748,17 @@
       border-radius: var(--rounded-3xl);
     }
 
+    .box-hint {
+      display: none; /* na telefonu je gore levo izbor kutije */
+    }
+    .box-select {
+      top: var(--space-400);
+      left: var(--space-400);
+      width: calc(100% - 2 * var(--space-400));
+    }
+
     .box-viewer::before {
-      --c: var(--gold);
-      content: '';
-      position: absolute;
-      inset: 16px;
-      z-index: 3;
-      pointer-events: none;
-      opacity: 0.55;
-      background:
-        linear-gradient(var(--c), var(--c)) top left / 20px 1px,
-        linear-gradient(var(--c), var(--c)) top left / 1px 20px,
-        linear-gradient(var(--c), var(--c)) top right / 20px 1px,
-        linear-gradient(var(--c), var(--c)) top right / 1px 20px;
-      background-repeat: no-repeat;
+      display: none; 
     }
 
     .box-controls {
@@ -472,7 +771,10 @@
     .box-canvas,
     .box-hint,
     .box-loader,
-    .box-slider::-webkit-slider-thumb {
+    .box-slider::-webkit-slider-thumb,
+    .box-select-btn,
+    .box-select-chevron,
+    .box-select-list {
       transition: none;
     }
     .box-loader i {
