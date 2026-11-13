@@ -90,7 +90,10 @@ const services = [
 
     <div class='footer-bottom'>
       <p>© {year} Lass Projekt. Sva prava zadržana.</p>
-      <a href='#'>Nazad na vrh</a>
+      <div class='footer-bottom-end'>
+        <p class='credits'>Web sajt izradio: <a href='https://webdok.rs' target='_blank' rel='noopener'>WebDok</a></p>
+        <a href='#'>Nazad na vrh</a>
+      </div>
     </div>
   </div>
 
@@ -339,6 +342,28 @@ const services = [
   }
   .footer-bottom p {
     font-size: inherit;
+  }
+  .footer-bottom-end {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-300) var(--space-500);
+    justify-content: space-between;
+    width: 100%;
+  }
+  .credits a {
+    font-weight: 600;
+    color: var(--text-800);
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 0.25em;
+    transition:
+      color 0.25s ease,
+      text-decoration-color 0.25s ease;
+  }
+  .credits a:hover,
+  .credits a:focus-visible {
+    color: var(--gold);
+    text-decoration-color: var(--gold);
   }
 
   /* ---------- Veliki wordmark na dnu ---------- */
