@@ -11,7 +11,7 @@
  *   { id: 'jedinstveni-id', name: 'Naziv u meniju', model: '/putanja/do/modela.glb' }
  * Prva u nizu je izabrana pri učitavanju. Svaki model treba da ima animaciju otvaranja/zatvaranja (slajder).
  */
-const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija', model: '/box.glb' }];
+const boxes = [{ id: 'transportna-americka', name: 'Transportna američka kutija', model: '/box.glb' }];
 ---
 
 <div class='box-viewer' data-box-viewer>
@@ -45,6 +45,20 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
   </div>
   <p class='box-error' role='status'>3D prikaz trenutno nije dostupan.</p>
 
+  <p class='box-zoom-hint' aria-hidden='true'>Ctrl / ⌘ + točkić za zum</p>
+
+  <div class='box-zoom' role='group' aria-label='Zum kutije'>
+    <button type='button' class='box-zoom-btn' data-zoom='in' aria-label='Uvećaj'>
+      <svg viewBox='0 0 16 16' width='16' height='16' aria-hidden='true'><path d='M8 3v10M3 8h10' /></svg>
+    </button>
+    <button type='button' class='box-zoom-btn' data-zoom='out' aria-label='Umanji'>
+      <svg viewBox='0 0 16 16' width='16' height='16' aria-hidden='true'><path d='M3 8h10' /></svg>
+    </button>
+    <button type='button' class='box-zoom-btn' data-zoom='reset' aria-label='Vrati početni prikaz'>
+      <svg viewBox='0 0 16 16' width='16' height='16' aria-hidden='true'><path d='M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4' /></svg>
+    </button>
+  </div>
+
   <div class='box-controls'>
     <input
       id='box-animation'
@@ -65,7 +79,10 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
 
 <script>
   const MODEL_URL = '/box.glb';
-  const ALLOW_WHEEL_ZOOM = false; // true = točkić zumira (ali "hvata" skrol stranice dok je kursor na kutiji)
+  // 'ctrl'   = točkić zumira samo uz Ctrl/⌘ (i pinch na touchpadu), inače se skroluje stranica
+  // 'always' = točkić uvek zumira (ali "hvata" skrol stranice dok je kursor na kutiji)
+  const WHEEL_ZOOM: 'ctrl' | 'always' = 'ctrl';
+  const ZOOM_STEP = 0.8; // svaki klik na + množi razdaljinu kamere sa 0.8 (na - deli)
 
   const container = document.querySelector<HTMLElement>('[data-box-viewer]');
   const canvas = container?.querySelector<HTMLCanvasElement>('.box-canvas');
@@ -172,6 +189,8 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
   let visible = false;
   let started = false;
   let invalidate: () => void = () => {};
+  let zoomBy: ((factor: number) => void) | null = null;
+  let zoomReset: (() => void) | null = null;
 
   async function init() {
     try {
@@ -219,7 +238,7 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
       controls.enableDamping = !reduceMotion;
       controls.dampingFactor = 0.08;
       controls.enablePan = false;
-      controls.enableZoom = ALLOW_WHEEL_ZOOM;
+      controls.enableZoom = true; // točkić/pinch; točkić se po potrebi filtrira ispod
       controls.minPolarAngle = THREE.MathUtils.degToRad(10);
       controls.maxPolarAngle = THREE.MathUtils.degToRad(85);
       // jedan prst vertikalno skroluje stranicu, horizontalno rotira kutiju
@@ -227,9 +246,29 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
 
       /* ---------- Frame scheduler ---------- */
       let raf = 0;
+      /* ---------- Zum dugmad: glatko pomeranje kamere ka cilju (uklapa se u render po potrebi) ---------- */
+      let zoomGoal: number | null = null;
+      let homeDistance = 1;
+      const camDistance = () => camera.position.distanceTo(controls.target);
+      const setCamDistance = (d: number) => {
+        const dir = camera.position.clone().sub(controls.target).normalize();
+        camera.position.copy(controls.target).addScaledVector(dir, d);
+      };
+
       const frame = () => {
         raf = 0;
         if (!visible) return;
+        if (zoomGoal !== null) {
+          const d = camDistance();
+          const diff = zoomGoal - d;
+          if (Math.abs(diff) < d * 0.002) {
+            setCamDistance(zoomGoal);
+            zoomGoal = null;
+          } else {
+            setCamDistance(d + diff * 0.2);
+            invalidate();
+          }
+        }
         controls.update(); // šalje 'change' (pa i sledeći frame) samo dok ima kretanja/prigušenja
         renderer.render(scene, camera);
       };
@@ -238,6 +277,17 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
       };
       controls.addEventListener('change', invalidate);
       controls.addEventListener('start', () => container!.classList.add('is-touched'), { once: true });
+      controls.addEventListener('start', () => (zoomGoal = null)); // korisnik preuzima kontrolu
+
+      zoomBy = (factor) => {
+        const base = zoomGoal ?? camDistance();
+        zoomGoal = THREE.MathUtils.clamp(base * factor, controls.minDistance, controls.maxDistance);
+        invalidate();
+      };
+      zoomReset = () => {
+        zoomGoal = THREE.MathUtils.clamp(homeDistance, controls.minDistance, controls.maxDistance);
+        invalidate();
+      };
 
       /* ---------- Modeli: učitavanje, keš i prebacivanje ---------- */
       interface Entry {
@@ -323,7 +373,9 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
 
         // pri promeni kutije zadrži ugao posmatranja, a razdaljinu prilagodi novom modelu
         const dir = framed ? camera.position.clone().sub(controls.target).normalize() : defaultDir;
-        camera.position.copy(controls.target).addScaledVector(dir, distance * 1.494);
+        homeDistance = distance * 1.494;
+        camera.position.copy(controls.target).addScaledVector(dir, homeDistance);
+        zoomGoal = null;
         controls.update();
         framed = true;
       }
@@ -389,6 +441,31 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
       container!.classList.add('is-error');
     }
   }
+
+  /* ---------- Točkić miša: zum samo uz Ctrl/⌘, da stranica može normalno da se skroluje preko kutije ---------- */
+  let zoomHintTimer = 0;
+  if (WHEEL_ZOOM === 'ctrl') {
+    container.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.target !== canvas || e.ctrlKey || e.metaKey) return; // Ctrl/⌘ i pinch na touchpadu prolaze do OrbitControls
+        e.stopPropagation(); // OrbitControls ne vidi događaj, pa ne zove preventDefault i stranica se skroluje
+        container.classList.add('show-zoom-hint');
+        clearTimeout(zoomHintTimer);
+        zoomHintTimer = window.setTimeout(() => container.classList.remove('show-zoom-hint'), 1400);
+      },
+      { capture: true, passive: true }
+    );
+  }
+
+  container.querySelector('.box-zoom')!.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLElement>('[data-zoom]');
+    if (!btn) return;
+    const kind = btn.dataset.zoom;
+    if (kind === 'in') zoomBy?.(ZOOM_STEP);
+    else if (kind === 'out') zoomBy?.(1 / ZOOM_STEP);
+    else zoomReset?.();
+  });
 
   /* Učitaj tek kad se sekcija približi ekranu; renderuj samo dok je vidljiva */
   new IntersectionObserver(
@@ -536,7 +613,7 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     padding: var(--space-400) var(--space-500);
     background: rgba(12, 9, 6, 0.7);
     border: 1px solid var(--line-strong);
-    border-radius: var(--rounded-xl);
+    border-radius: var(--rounded-2xl);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
@@ -637,7 +714,7 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     cursor: pointer;
     background: rgba(12, 9, 6, 0.7);
     border: 1px solid var(--line-strong);
-    border-radius: var(--rounded-xl);
+    border-radius: var(--rounded-2xl);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     transition: border-color 0.3s ease;
@@ -728,8 +805,80 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     background: var(--gradient-brand);
   }
   .is-error .box-select,
+  .is-error .box-zoom,
   .no-anim .box-controls {
     display: none;
+  }
+
+  /* ---------- Zum ---------- */
+  .box-zoom {
+    position: absolute;
+    top: 50%;
+    right: var(--space-500);
+    z-index: 4;
+    display: grid;
+    gap: 8px;
+    translate: 0 -50%;
+    transition: opacity 0.5s ease;
+  }
+  .box-viewer:not(.is-ready) .box-zoom {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .box-zoom-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    color: var(--text-900);
+    cursor: pointer;
+    background: rgba(12, 9, 6, 0.7);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--rounded-lg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+      border-color 0.25s ease,
+      color 0.25s ease,
+      transform 0.3s var(--ease);
+  }
+  .box-zoom-btn:hover,
+  .box-zoom-btn:focus-visible {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  .box-zoom-btn:active {
+    transform: scale(0.94);
+  }
+  .box-zoom-btn svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linecap: square;
+  }
+
+  .box-zoom-hint {
+    position: absolute;
+    top: var(--space-500);
+    left: 50%;
+    z-index: 4;
+    padding: 0.5rem 0.9rem;
+    font-size: var(--fs-100);
+    color: var(--text-800);
+    pointer-events: none;
+    background: rgba(12, 9, 6, 0.85);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--rounded-lg);
+    opacity: 0;
+    translate: -50% -6px;
+    transition:
+      opacity 0.3s ease,
+      translate 0.4s var(--ease);
+  }
+  .show-zoom-hint .box-zoom-hint {
+    opacity: 1;
+    translate: -50% 0;
   }
 
   /* prebacivanje kutije: kratko utamni scenu i pokaži loader */
@@ -751,6 +900,12 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     .box-hint {
       display: none; /* na telefonu je gore levo izbor kutije */
     }
+    .box-zoom {
+      right: var(--space-400);
+    }
+    .box-zoom-hint {
+      display: none; /* wheel događaja nema na telefonu */
+    }
     .box-select {
       top: var(--space-400);
       left: var(--space-400);
@@ -758,7 +913,19 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     }
 
     .box-viewer::before {
-      display: none; 
+      --c: var(--gold);
+      content: '';
+      position: absolute;
+      inset: 16px;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0.55;
+      background:
+        linear-gradient(var(--c), var(--c)) top left / 20px 1px,
+        linear-gradient(var(--c), var(--c)) top left / 1px 20px,
+        linear-gradient(var(--c), var(--c)) top right / 20px 1px,
+        linear-gradient(var(--c), var(--c)) top right / 1px 20px;
+      background-repeat: no-repeat;
     }
 
     .box-controls {
@@ -774,7 +941,10 @@ const boxes = [{ id: 'transportna-ameriken', name: 'Transportna ameriken kutija'
     .box-slider::-webkit-slider-thumb,
     .box-select-btn,
     .box-select-chevron,
-    .box-select-list {
+    .box-select-list,
+    .box-zoom,
+    .box-zoom-btn,
+    .box-zoom-hint {
       transition: none;
     }
     .box-loader i {
