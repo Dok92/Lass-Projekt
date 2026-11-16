@@ -906,6 +906,9 @@ const boxes = [{ id: 'transportna-americka', name: 'Transportna američka kutija
     .box-zoom-hint {
       display: none; /* wheel događaja nema na telefonu */
     }
+    .box-zoom-btn {
+      display: none
+    }
     .box-select {
       top: var(--space-400);
       left: var(--space-400);
@@ -913,19 +916,7 @@ const boxes = [{ id: 'transportna-americka', name: 'Transportna američka kutija
     }
 
     .box-viewer::before {
-      --c: var(--gold);
-      content: '';
-      position: absolute;
-      inset: 16px;
-      z-index: 3;
-      pointer-events: none;
-      opacity: 0.55;
-      background:
-        linear-gradient(var(--c), var(--c)) top left / 20px 1px,
-        linear-gradient(var(--c), var(--c)) top left / 1px 20px,
-        linear-gradient(var(--c), var(--c)) top right / 20px 1px,
-        linear-gradient(var(--c), var(--c)) top right / 1px 20px;
-      background-repeat: no-repeat;
+      display: none; 
     }
 
     .box-controls {
